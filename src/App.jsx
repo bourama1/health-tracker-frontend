@@ -1,7 +1,17 @@
 import React, { useState } from 'react';
-import { 
-  Box, Drawer, AppBar, CssBaseline, Toolbar, List, Typography, 
-  Divider, ListItem, ListItemButton, ListItemIcon, ListItemText 
+import {
+  Box,
+  Drawer,
+  AppBar,
+  CssBaseline,
+  Toolbar,
+  List,
+  Typography,
+  Divider,
+  ListItem,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
 } from '@mui/material';
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 import StraightenIcon from '@mui/icons-material/Straighten';
@@ -33,13 +43,16 @@ export default function App() {
     { text: 'Workouts', icon: <FitnessCenterIcon /> },
     { text: 'Measurements', icon: <StraightenIcon /> },
     { text: 'Photos', icon: <PhotoCameraIcon /> },
-    { text: 'Sleep', icon: <BedtimeIcon /> }
+    { text: 'Sleep', icon: <BedtimeIcon /> },
   ];
 
   return (
     <Box sx={{ display: 'flex' }}>
       <CssBaseline />
-      <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}>
+      <AppBar
+        position="fixed"
+        sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}
+      >
         <Toolbar>
           <Typography variant="h6" noWrap component="div">
             Personal Health Dashboard
@@ -51,7 +64,10 @@ export default function App() {
         sx={{
           width: drawerWidth,
           flexShrink: 0,
-          [`& .MuiDrawer-paper`]: { width: drawerWidth, boxSizing: 'border-box' },
+          [`& .MuiDrawer-paper`]: {
+            width: drawerWidth,
+            boxSizing: 'border-box',
+          },
         }}
       >
         <Toolbar />
@@ -59,9 +75,9 @@ export default function App() {
           <List>
             {menuItems.map((item) => (
               <ListItem key={item.text} disablePadding>
-                <ListItemButton 
-                    selected={activeTab === item.text}
-                    onClick={() => setActiveTab(item.text)}
+                <ListItemButton
+                  selected={activeTab === item.text}
+                  onClick={() => setActiveTab(item.text)}
                 >
                   <ListItemIcon>{item.icon}</ListItemIcon>
                   <ListItemText primary={item.text} />
