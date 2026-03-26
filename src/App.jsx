@@ -17,6 +17,7 @@ import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 import StraightenIcon from '@mui/icons-material/Straighten';
 import PhotoCameraIcon from '@mui/icons-material/PhotoCamera';
 import BedtimeIcon from '@mui/icons-material/Bedtime';
+import Measurements from './components/Measurements';
 
 const drawerWidth = 240;
 
@@ -29,7 +30,7 @@ export default function App() {
       case 'Workouts':
         return <Typography variant="h4">Workout & Step Tracking</Typography>;
       case 'Measurements':
-        return <Typography variant="h4">Body Measurements</Typography>;
+        return <Measurements />; // Updated here
       case 'Photos':
         return <Typography variant="h4">Progress Photos Comparison</Typography>;
       case 'Sleep':
