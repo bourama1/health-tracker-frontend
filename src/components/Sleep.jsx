@@ -15,6 +15,22 @@ import {
 } from '@mui/material';
 import axios from 'axios';
 
+// Helper: minutes to H:mm
+const minutesToHm = (minutes) => {
+  if (minutes === null || minutes === undefined || minutes === '') return '';
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return `${h}:${m.toString().padStart(2, '0')}`;
+};
+
+// Helper: H:mm to minutes
+const hmToMinutes = (hm) => {
+  if (!hm || typeof hm !== 'string' || !hm.includes(':')) return hm; // Return as is if not H:mm
+  const [h, m] = hm.split(':').map(Number);
+  if (isNaN(h) || isNaN(m)) return hm;
+  return h * 60 + m;
+};
+
 export default function Sleep() {
   const [history, setHistory] = useState([]);
   const [formData, setFormData] = useState({
@@ -46,7 +62,12 @@ export default function Sleep() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.post('/api/sleep', formData);
+      const dataToSubmit = {
+        ...formData,
+        deep_sleep_minutes: hmToMinutes(formData.deep_sleep_minutes),
+        rem_sleep_minutes: hmToMinutes(formData.rem_sleep_minutes),
+      };
+      await axios.post('/api/sleep', dataToSubmit);
       fetchHistory();
       setFormData({
         ...formData,
@@ -130,18 +151,20 @@ export default function Sleep() {
               />
               <TextField
                 fullWidth
-                label="Deep Sleep (min)"
+                label="Deep Sleep (h:mm)"
                 name="deep_sleep_minutes"
-                type="number"
+                type="text"
+                placeholder="e.g., 1:30"
                 value={formData.deep_sleep_minutes}
                 onChange={handleChange}
                 sx={{ mb: 2 }}
               />
               <TextField
                 fullWidth
-                label="REM Sleep (min)"
+                label="REM Sleep (h:mm)"
                 name="rem_sleep_minutes"
-                type="number"
+                type="text"
+                placeholder="e.g., 1:30"
                 value={formData.rem_sleep_minutes}
                 onChange={handleChange}
                 sx={{ mb: 2 }}
@@ -168,8 +191,8 @@ export default function Sleep() {
                   <TableCell align="right">Wake Up</TableCell>
                   <TableCell align="right">RHR</TableCell>
                   <TableCell align="right">Score</TableCell>
-                  <TableCell align="right">Deep (min)</TableCell>
-                  <TableCell align="right">REM (min)</TableCell>
+                  <TableCell align="right">Deep (h:mm)</TableCell>
+                  <TableCell align="right">REM (h:mm)</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -180,8 +203,8 @@ export default function Sleep() {
                     <TableCell align="right">{row.wake_time}</TableCell>
                     <TableCell align="right">{row.rhr}</TableCell>
                     <TableCell align="right">{row.sleep_score}</TableCell>
-                    <TableCell align="right">{row.deep_sleep_minutes}</TableCell>
-                    <TableCell align="right">{row.rem_sleep_minutes}</TableCell>
+                    <TableCell align="right">{minutesToHm(row.deep_sleep_minutes)}</TableCell>
+                    <TableCell align="right">{minutesToHm(row.rem_sleep_minutes)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
