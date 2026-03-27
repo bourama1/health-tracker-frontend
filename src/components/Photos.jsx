@@ -288,8 +288,10 @@ export default function Photos() {
             <Grid container spacing={2}>
               <Grid item xs={6}>
                 <FormControl fullWidth>
-                  <InputLabel>Date 1</InputLabel>
+                  <InputLabel id="date1-label">Date 1</InputLabel>
                   <Select
+                    labelId="date1-label"
+                    id="date1-select"
                     value={selectedDate1}
                     label="Date 1"
                     onChange={(e) => setSelectedDate1(e.target.value)}
@@ -305,8 +307,10 @@ export default function Photos() {
               </Grid>
               <Grid item xs={6}>
                 <FormControl fullWidth disabled={!selectedDate1}>
-                  <InputLabel>Date 2 (Compare)</InputLabel>
+                  <InputLabel id="date2-label">Date 2 (Compare)</InputLabel>
                   <Select
+                    labelId="date2-label"
+                    id="date2-select"
                     value={selectedDate2}
                     label="Date 2 (Compare)"
                     onChange={(e) => setSelectedDate2(e.target.value)}

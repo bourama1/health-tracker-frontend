@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import Measurements from './Measurements';
 import axios from 'axios';
 
@@ -13,7 +13,7 @@ jest.mock('recharts', () => {
       <div style={{ width: 800, height: 400 }}>{children}</div>
     ),
     LineChart: ({ children }) => <div data-testid="line-chart">{children}</div>,
-    Line: () => <div />,
+    Line: ({ name }) => <div data-testid="line-element">{name}</div>,
     XAxis: () => <div />,
     YAxis: () => <div />,
     CartesianGrid: () => <div />,
@@ -35,6 +35,18 @@ const mockHistory = [
     calf: 38,
     thigh: 60,
   },
+  {
+    id: 2,
+    date: '2023-01-15',
+    bodyweight: 79,
+    body_fat: 14.5,
+    chest: 99,
+    waist: 84,
+    biceps: 35.5,
+    forearm: 28.5,
+    calf: 38.5,
+    thigh: 60.5,
+  },
 ];
 
 describe('Measurements Component', () => {
@@ -42,8 +54,14 @@ describe('Measurements Component', () => {
     axios.get.mockResolvedValue({ data: mockHistory });
   });
 
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
   test('renders history table with data including new fields', async () => {
-    render(<Measurements />);
+    await act(async () => {
+      render(<Measurements />);
+    });
 
     expect(await screen.findByText('2023-01-01')).toBeInTheDocument();
     expect(screen.getByText('80')).toBeInTheDocument();
@@ -58,7 +76,9 @@ describe('Measurements Component', () => {
 
   test('submits form correctly with new fields', async () => {
     axios.post.mockResolvedValue({ data: { success: true } });
-    render(<Measurements />);
+    await act(async () => {
+      render(<Measurements />);
+    });
 
     fireEvent.change(screen.getByLabelText(/Weight/i), {
       target: { value: '82' },
@@ -74,7 +94,9 @@ describe('Measurements Component', () => {
     });
 
     const saveButton = screen.getByRole('button', { name: /Save Entry/i });
-    fireEvent.click(saveButton);
+    await act(async () => {
+      fireEvent.click(saveButton);
+    });
 
     await waitFor(() => {
       expect(axios.post).toHaveBeenCalledWith(
@@ -87,5 +109,27 @@ describe('Measurements Component', () => {
         })
       );
     });
+  });
+
+  test('renders graph and allows switching measurement type', async () => {
+    await act(async () => {
+      render(<Measurements />);
+    });
+
+    expect(screen.getByTestId('line-chart')).toBeInTheDocument();
+
+    // Default measurement is Weight (kg)
+    expect(screen.getByTestId('line-element')).toHaveTextContent('Weight (kg)');
+
+    // Switch to Body Fat %
+    const select = screen.getByRole('combobox', { name: /Select Measurement/i });
+    fireEvent.mouseDown(select);
+
+    const option = await screen.findByRole('option', { name: 'Body Fat %' });
+    await act(async () => {
+      fireEvent.click(option);
+    });
+
+    expect(screen.getByTestId('line-element')).toHaveTextContent('Body Fat %');
   });
 });
