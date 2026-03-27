@@ -24,6 +24,7 @@ import Brightness4Icon from '@mui/icons-material/Brightness4';
 import Brightness7Icon from '@mui/icons-material/Brightness7';
 import Measurements from './components/Measurements';
 import Photos from './components/Photos';
+import Sleep from './components/Sleep';
 
 const drawerWidth = 240;
 
@@ -55,7 +56,7 @@ export default function App() {
       case 'Photos':
         return <Photos />;
       case 'Sleep':
-        return <Typography variant="h4">Sleep & Recovery Tracking</Typography>;
+        return <Sleep />;
       default:
         return <Typography variant="h4">Welcome</Typography>;
     }

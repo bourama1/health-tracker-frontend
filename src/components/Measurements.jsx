@@ -122,7 +122,7 @@ export default function Measurements() {
 
       <Grid container spacing={3}>
         {/* Form Section */}
-        <Grid item xs={12} md={4}>
+        <Grid size={{ xs: 12, md: 4 }}>
           <Paper sx={{ p: 2, mb: 3 }}>
             <Typography variant="h6" gutterBottom>
               Add New Entry
@@ -140,7 +140,7 @@ export default function Measurements() {
                 required
               />
               <Grid container spacing={2}>
-                <Grid item xs={6}>
+                <Grid size={6}>
                   <TextField
                     fullWidth
                     label="Weight (kg)"
@@ -151,7 +151,7 @@ export default function Measurements() {
                     sx={{ mb: 2 }}
                   />
                 </Grid>
-                <Grid item xs={6}>
+                <Grid size={6}>
                   <TextField
                     fullWidth
                     label="Body Fat %"
@@ -162,7 +162,7 @@ export default function Measurements() {
                     sx={{ mb: 2 }}
                   />
                 </Grid>
-                <Grid item xs={6}>
+                <Grid size={6}>
                   <TextField
                     fullWidth
                     label="Chest (cm)"
@@ -173,7 +173,7 @@ export default function Measurements() {
                     sx={{ mb: 2 }}
                   />
                 </Grid>
-                <Grid item xs={6}>
+                <Grid size={6}>
                   <TextField
                     fullWidth
                     label="Waist (cm)"
@@ -184,7 +184,7 @@ export default function Measurements() {
                     sx={{ mb: 2 }}
                   />
                 </Grid>
-                <Grid item xs={6}>
+                <Grid size={6}>
                   <TextField
                     fullWidth
                     label="Biceps (cm)"
@@ -195,7 +195,7 @@ export default function Measurements() {
                     sx={{ mb: 2 }}
                   />
                 </Grid>
-                <Grid item xs={6}>
+                <Grid size={6}>
                   <TextField
                     fullWidth
                     label="Forearm (cm)"
@@ -206,7 +206,7 @@ export default function Measurements() {
                     sx={{ mb: 2 }}
                   />
                 </Grid>
-                <Grid item xs={6}>
+                <Grid size={6}>
                   <TextField
                     fullWidth
                     label="Calf (cm)"
@@ -217,7 +217,7 @@ export default function Measurements() {
                     sx={{ mb: 2 }}
                   />
                 </Grid>
-                <Grid item xs={6}>
+                <Grid size={6}>
                   <TextField
                     fullWidth
                     label="Thigh (cm)"
@@ -288,7 +288,7 @@ export default function Measurements() {
         </Grid>
 
         {/* History Table Section */}
-        <Grid item xs={12} md={8}>
+        <Grid size={{ xs: 12, md: 8 }}>
           <TableContainer component={Paper}>
             <Table size="small">
               <TableHead>
