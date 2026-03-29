@@ -94,7 +94,7 @@ export default function Sleep() {
       </Typography>
 
       <Grid container spacing={3}>
-        <Grid item xs={12} md={4}>
+        <Grid size={{ xs: 12, md: 4 }}>
           <Paper sx={{ p: 2, mb: 3 }}>
             <Typography variant="h6" gutterBottom>
               Add Sleep Entry
@@ -181,7 +181,7 @@ export default function Sleep() {
           </Paper>
         </Grid>
 
-        <Grid item xs={12} md={8}>
+        <Grid size={{ xs: 12, md: 8 }}>
           <TableContainer component={Paper}>
             <Table size="small">
               <TableHead>
@@ -203,8 +203,12 @@ export default function Sleep() {
                     <TableCell align="right">{row.wake_time}</TableCell>
                     <TableCell align="right">{row.rhr}</TableCell>
                     <TableCell align="right">{row.sleep_score}</TableCell>
-                    <TableCell align="right">{minutesToHm(row.deep_sleep_minutes)}</TableCell>
-                    <TableCell align="right">{minutesToHm(row.rem_sleep_minutes)}</TableCell>
+                    <TableCell align="right">
+                      {minutesToHm(row.deep_sleep_minutes)}
+                    </TableCell>
+                    <TableCell align="right">
+                      {minutesToHm(row.rem_sleep_minutes)}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>

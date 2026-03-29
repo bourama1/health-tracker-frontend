@@ -1,4 +1,10 @@
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  act,
+} from '@testing-library/react';
 import Sleep from './Sleep';
 import axios from 'axios';
 
@@ -54,7 +60,9 @@ describe('Sleep Component', () => {
   });
 
   test('submits sleep form correctly', async () => {
-    axios.post.mockResolvedValue({ data: { message: 'Sleep data saved successfully' } });
+    axios.post.mockResolvedValue({
+      data: { message: 'Sleep data saved successfully' },
+    });
     await act(async () => {
       render(<Sleep />);
     });

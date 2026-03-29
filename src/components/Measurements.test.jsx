@@ -1,4 +1,10 @@
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  act,
+} from '@testing-library/react';
 import Measurements from './Measurements';
 import axios from 'axios';
 
@@ -122,7 +128,9 @@ describe('Measurements Component', () => {
     expect(screen.getByTestId('line-element')).toHaveTextContent('Weight (kg)');
 
     // Switch to Body Fat %
-    const select = screen.getByRole('combobox', { name: /Select Measurement/i });
+    const select = screen.getByRole('combobox', {
+      name: /Select Measurement/i,
+    });
     fireEvent.mouseDown(select);
 
     const option = await screen.findByRole('option', { name: 'Body Fat %' });

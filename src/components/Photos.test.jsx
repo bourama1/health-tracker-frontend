@@ -1,4 +1,10 @@
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  act,
+} from '@testing-library/react';
 import Photos from './Photos';
 import axios from 'axios';
 
@@ -55,11 +61,15 @@ describe('Photos Component', () => {
       fireEvent.click(option1);
     });
 
-    expect(await screen.findByText('2023-01-01', { selector: 'h6' })).toBeInTheDocument();
+    expect(
+      await screen.findByText('2023-01-01', { selector: 'h6' })
+    ).toBeInTheDocument();
 
     const images = await screen.findAllByRole('img');
     expect(images.length).toBeGreaterThanOrEqual(3);
-    const frontImage = images.find(img => img.getAttribute('alt') === 'front');
+    const frontImage = images.find(
+      (img) => img.getAttribute('alt') === 'front'
+    );
     expect(frontImage).toHaveAttribute('src', '/uploads/2023-01-01-front.jpg');
   });
 
@@ -110,7 +120,9 @@ describe('Photos Component', () => {
     });
 
     // Select Date 2
-    const date2Select = screen.getByRole('combobox', { name: /Date 2 \(Compare\)/i });
+    const date2Select = screen.getByRole('combobox', {
+      name: /Date 2 \(Compare\)/i,
+    });
     fireEvent.mouseDown(date2Select);
     const option2 = await screen.findByRole('option', { name: '2023-01-15' });
     await act(async () => {
@@ -118,8 +130,8 @@ describe('Photos Component', () => {
     });
 
     const dateHeaders = await screen.findAllByRole('heading', { level: 6 });
-    expect(dateHeaders.some(h => h.textContent === '2023-01-01')).toBe(true);
-    expect(dateHeaders.some(h => h.textContent === '2023-01-15')).toBe(true);
+    expect(dateHeaders.some((h) => h.textContent === '2023-01-01')).toBe(true);
+    expect(dateHeaders.some((h) => h.textContent === '2023-01-15')).toBe(true);
 
     const images = await screen.findAllByRole('img');
     expect(images).toHaveLength(6);
