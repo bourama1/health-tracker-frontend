@@ -16,7 +16,7 @@ test('navigates to different tabs', async () => {
   render(<App />);
 
   // Default tab is Workouts
-  expect(await screen.findByText(/Workout & Step Tracking/i)).toBeInTheDocument();
+  expect(await screen.findByText(/Workout Tracking/i)).toBeInTheDocument();
 
   // Click on Measurements tab
   const measurementsTab = screen.getByRole('button', { name: /Measurements/i });

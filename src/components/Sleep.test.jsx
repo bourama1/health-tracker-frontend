@@ -46,8 +46,8 @@ describe('Sleep Component', () => {
     expect(screen.getByText('07:30')).toBeInTheDocument();
     expect(screen.getByText('58')).toBeInTheDocument();
     expect(screen.getByText('82')).toBeInTheDocument();
-    expect(screen.getByText('85')).toBeInTheDocument();
-    expect(screen.getByText('110')).toBeInTheDocument();
+    expect(screen.getByText('1:25')).toBeInTheDocument();
+    expect(screen.getByText('1:50')).toBeInTheDocument();
 
     expect(screen.getByText('2023-10-21')).toBeInTheDocument();
     expect(screen.getByText('88')).toBeInTheDocument();

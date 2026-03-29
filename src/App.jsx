@@ -25,6 +25,7 @@ import Brightness7Icon from '@mui/icons-material/Brightness7';
 import Measurements from './components/Measurements';
 import Photos from './components/Photos';
 import Sleep from './components/Sleep';
+import Workouts from './components/Workouts';
 
 const drawerWidth = 240;
 
@@ -50,7 +51,7 @@ export default function App() {
   const renderContent = () => {
     switch (activeTab) {
       case 'Workouts':
-        return <Typography variant="h4">Workout & Step Tracking</Typography>;
+        return <Workouts />;
       case 'Measurements':
         return <Measurements />;
       case 'Photos':
