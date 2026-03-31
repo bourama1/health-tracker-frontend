@@ -13,7 +13,7 @@ import {
   TableRow,
   Grid,
 } from '@mui/material';
-import axios from 'axios';
+import axios from '../api';
 
 // Helper: minutes to H:mm
 const minutesToHm = (minutes) => {

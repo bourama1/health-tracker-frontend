@@ -24,7 +24,7 @@ import {
 import SearchIcon from '@mui/icons-material/Search';
 import CloseIcon from '@mui/icons-material/Close';
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
-import axios from 'axios';
+import axios from '../api';
 
 // ─── Muscle chip colours ─────────────────────────────────────────────────────
 

@@ -6,7 +6,7 @@ import {
   act,
 } from '@testing-library/react';
 import Workouts from './Workouts';
-import axios from 'axios';
+import axios from '../api';
 
 jest.mock('axios');
 

@@ -34,7 +34,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
-import axios from 'axios';
+import axios from '../api';
 import ExerciseLibrary from './ExerciseLibrary';
 
 // ─── Rest Timer ──────────────────────────────────────────────────────────────

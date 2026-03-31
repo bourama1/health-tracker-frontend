@@ -27,7 +27,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
-import axios from 'axios';
+import axios from '../api';
 
 export default function Measurements() {
   const [history, setHistory] = useState([]);

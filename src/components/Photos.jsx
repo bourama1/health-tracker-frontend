@@ -12,7 +12,7 @@ import {
   Select,
   Divider,
 } from '@mui/material';
-import axios from 'axios';
+import axios from '../api';
 
 export default function Photos() {
   const [dates, setDates] = useState([]);
