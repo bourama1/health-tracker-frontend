@@ -75,12 +75,23 @@ export default function Measurements() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Create a copy of the data and convert empty strings to null
+    const submissionData = { ...formData };
+    Object.keys(submissionData).forEach((key) => {
+      if (key !== 'date' && submissionData[key] === '') {
+        submissionData[key] = null;
+      }
+    });
+
     try {
-      await axios.post('/api/measurements', formData);
-      fetchHistory(); // Refresh table and graph
-      // Reset numeric fields only
+      // Send the sanitized data
+      await axios.post('/api/measurements', submissionData);
+      fetchHistory();
+
+      // Reset numeric fields and keep current date
       setFormData({
-        ...formData,
+        date: new Date().toISOString().split('T')[0],
         bodyweight: '',
         body_fat: '',
         chest: '',
@@ -91,7 +102,10 @@ export default function Measurements() {
         thigh: '',
       });
     } catch (error) {
-      alert('Failed to save measurements');
+      console.error('Submission error details:', error.response?.data);
+      alert(
+        `Failed to save: ${error.response?.data?.error || 'Unknown error'}`
+      );
     }
   };
 
