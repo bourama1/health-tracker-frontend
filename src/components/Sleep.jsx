@@ -185,7 +185,7 @@ export default function Sleep() {
           <TableContainer component={Paper}>
             <Table size="small">
               <TableHead>
-                <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
+                <TableRow sx={{ backgroundColor: 'action.hover' }}>
                   <TableCell>Date</TableCell>
                   <TableCell align="right">Bedtime</TableCell>
                   <TableCell align="right">Wake Up</TableCell>
