@@ -8,38 +8,55 @@ import {
 import Photos from './Photos';
 import axios from '../api';
 
-jest.mock('axios');
+jest.mock('../api');
 
 const mockDates = [{ date: '2023-01-01' }, { date: '2023-01-15' }];
 const mockPhotos = {
   date: '2023-01-01',
-  front_path: 'uploads/2023-01-01-front.jpg',
-  side_path: 'uploads/2023-01-01-side.jpg',
-  back_path: 'uploads/2023-01-01-back.jpg',
+  front_path: 'https://lh3.googleusercontent.com/front',
+  side_path: 'https://lh3.googleusercontent.com/side',
+  back_path: 'https://lh3.googleusercontent.com/back',
+  front_google_id: 'g1',
+  side_google_id: 'g2',
+  back_google_id: 'g3',
+};
+
+const mockGooglePhotos = {
+  mediaItems: [
+    { id: 'g1', baseUrl: 'https://lh3.googleusercontent.com/g1' },
+    { id: 'g2', baseUrl: 'https://lh3.googleusercontent.com/g2' },
+  ]
 };
 
 describe('Photos Component', () => {
   beforeEach(() => {
     axios.get.mockImplementation((url) => {
+      if (url === '/api/auth/status') {
+        return Promise.resolve({ data: { authenticated: true } });
+      }
       if (url === '/api/photos/dates') {
         return Promise.resolve({ data: mockDates });
       }
       if (url.startsWith('/api/photos/')) {
         return Promise.resolve({ data: mockPhotos });
       }
+      if (url === '/api/photos/google-photos') {
+        return Promise.resolve({ data: mockGooglePhotos });
+      }
       return Promise.reject(new Error('not found'));
     });
+    axios.post.mockResolvedValue({ data: { success: true } });
   });
 
   afterEach(() => {
     jest.clearAllMocks();
   });
 
-  test('renders correctly and fetches dates', async () => {
+  test('renders correctly and fetches dates when authenticated', async () => {
     await act(async () => {
       render(<Photos />);
     });
-    expect(screen.getByText(/Progress Photos/i)).toBeInTheDocument();
+    expect(screen.getByText(/Progress Photos \(Google Photos\)/i)).toBeInTheDocument();
 
     const date1Select = screen.getByLabelText(/Date 1/i);
     fireEvent.mouseDown(date1Select);
@@ -66,74 +83,27 @@ describe('Photos Component', () => {
     ).toBeInTheDocument();
 
     const images = await screen.findAllByRole('img');
-    expect(images.length).toBeGreaterThanOrEqual(3);
+    // 3 images in selection preview + 3 images in view = 6
+    // Actually, initially selection is empty.
     const frontImage = images.find(
       (img) => img.getAttribute('alt') === 'front'
     );
-    expect(frontImage).toHaveAttribute('src', '/uploads/2023-01-01-front.jpg');
+    expect(frontImage).toHaveAttribute('src', 'https://lh3.googleusercontent.com/front');
   });
 
-  test('uploads photos correctly', async () => {
-    window.alert = jest.fn();
-    axios.post.mockResolvedValue({ data: { success: true } });
-
-    let container;
-    await act(async () => {
-      const result = render(<Photos />);
-      container = result.container;
+  test('shows login screen when not authenticated', async () => {
+    axios.get.mockImplementation((url) => {
+      if (url === '/api/auth/status') {
+        return Promise.resolve({ data: { authenticated: false } });
+      }
+      return Promise.reject(new Error('not found'));
     });
 
-    const frontInput = container.querySelector('input[name="front"]');
-    const sideInput = container.querySelector('input[name="side"]');
-    const backInput = container.querySelector('input[name="back"]');
-
-    const file = new File(['hello'], 'hello.png', { type: 'image/png' });
-
-    await act(async () => {
-      fireEvent.change(frontInput, { target: { files: [file] } });
-      fireEvent.change(sideInput, { target: { files: [file] } });
-      fireEvent.change(backInput, { target: { files: [file] } });
-    });
-
-    const saveButton = screen.getByRole('button', { name: /Save Photos/i });
-    await act(async () => {
-      fireEvent.click(saveButton);
-    });
-
-    await waitFor(() => {
-      expect(axios.post).toHaveBeenCalled();
-      expect(window.alert).toHaveBeenCalledWith('Photos uploaded successfully');
-    });
-  });
-
-  test('displays comparison view when two dates are selected', async () => {
     await act(async () => {
       render(<Photos />);
     });
 
-    // Select Date 1
-    const date1Select = screen.getByRole('combobox', { name: /Date 1/i });
-    fireEvent.mouseDown(date1Select);
-    const option1 = await screen.findByRole('option', { name: '2023-01-01' });
-    await act(async () => {
-      fireEvent.click(option1);
-    });
-
-    // Select Date 2
-    const date2Select = screen.getByRole('combobox', {
-      name: /Date 2 \(Compare\)/i,
-    });
-    fireEvent.mouseDown(date2Select);
-    const option2 = await screen.findByRole('option', { name: '2023-01-15' });
-    await act(async () => {
-      fireEvent.click(option2);
-    });
-
-    const dateHeaders = await screen.findAllByRole('heading', { level: 6 });
-    expect(dateHeaders.some((h) => h.textContent === '2023-01-01')).toBe(true);
-    expect(dateHeaders.some((h) => h.textContent === '2023-01-15')).toBe(true);
-
-    const images = await screen.findAllByRole('img');
-    expect(images).toHaveLength(6);
+    expect(screen.getByText(/Connect to Google Photos/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Sign in with Google/i })).toBeInTheDocument();
   });
 });

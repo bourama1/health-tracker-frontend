@@ -6,9 +6,9 @@ import {
   act,
 } from '@testing-library/react';
 import Workouts from './Workouts';
-import axios from '../api';
+import api from '../api';
 
-jest.mock('axios');
+jest.mock('../api');
 
 const mockExercises = [
   { id: 'ex1', name: 'Exercise 1', primary_muscles: 'chest' },
@@ -33,7 +33,7 @@ const mockPlans = [
 
 describe('Workouts Component', () => {
   beforeEach(() => {
-    axios.get.mockImplementation((url) => {
+    api.get.mockImplementation((url) => {
       if (url === '/api/workouts/exercises')
         return Promise.resolve({ data: mockExercises });
       if (url === '/api/workouts/plans')
@@ -55,9 +55,7 @@ describe('Workouts Component', () => {
 
     expect(screen.getByText(/Workout Tracking/i)).toBeInTheDocument();
 
-    // Check if plans are loaded in select
-    const select = screen.getByRole('combobox');
-    fireEvent.mouseDown(select);
+    // Check if plans are loaded
     expect(await screen.findByText('Test Plan')).toBeInTheDocument();
   });
 

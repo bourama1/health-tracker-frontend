@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Box,
   Drawer,
@@ -13,9 +13,11 @@ import {
   ListItemIcon,
   ListItemText,
   IconButton,
+  Button,
   createTheme,
   ThemeProvider,
 } from '@mui/material';
+import axios from './api';
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 import StraightenIcon from '@mui/icons-material/Straighten';
 import PhotoCameraIcon from '@mui/icons-material/PhotoCamera';
@@ -32,6 +34,29 @@ const drawerWidth = 240;
 export default function App() {
   const [activeTab, setActiveTab] = useState('Workouts');
   const [mode, setMode] = useState('dark');
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const response = await axios.get('/api/auth/status');
+        setIsAuthenticated(response.data.authenticated);
+      } catch (error) {
+        setIsAuthenticated(false);
+      }
+    };
+    checkAuth();
+  }, [activeTab]);
+
+  const handleLogout = async () => {
+    try {
+      await axios.post('/api/auth/logout');
+      setIsAuthenticated(false);
+      window.location.reload();
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
+  };
 
   const theme = useMemo(
     () =>
@@ -87,6 +112,11 @@ export default function App() {
             >
               Personal Health Dashboard
             </Typography>
+            {isAuthenticated && (
+              <Button color="inherit" onClick={handleLogout} sx={{ mr: 2 }}>
+                Logout
+              </Button>
+            )}
             <IconButton onClick={toggleColorMode} color="inherit">
               {mode === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
             </IconButton>

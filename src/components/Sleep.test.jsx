@@ -6,9 +6,9 @@ import {
   act,
 } from '@testing-library/react';
 import Sleep from './Sleep';
-import axios from '../api';
+import api from '../api';
 
-jest.mock('axios');
+jest.mock('../api');
 
 const mockSleepHistory = [
   {
@@ -35,7 +35,7 @@ const mockSleepHistory = [
 
 describe('Sleep Component', () => {
   beforeEach(() => {
-    axios.get.mockResolvedValue({ data: mockSleepHistory });
+    api.get.mockResolvedValue({ data: mockSleepHistory });
   });
 
   afterEach(() => {
@@ -60,7 +60,7 @@ describe('Sleep Component', () => {
   });
 
   test('submits sleep form correctly', async () => {
-    axios.post.mockResolvedValue({
+    api.post.mockResolvedValue({
       data: { message: 'Sleep data saved successfully' },
     });
     await act(async () => {
@@ -95,7 +95,7 @@ describe('Sleep Component', () => {
     });
 
     await waitFor(() => {
-      expect(axios.post).toHaveBeenCalledWith(
+      expect(api.post).toHaveBeenCalledWith(
         '/api/sleep',
         expect.objectContaining({
           date: '2023-10-22',

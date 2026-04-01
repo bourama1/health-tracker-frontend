@@ -11,10 +11,19 @@ import {
   InputLabel,
   Select,
   Divider,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  CircularProgress,
 } from '@mui/material';
 import axios from '../api';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+
 export default function Photos() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [dates, setDates] = useState([]);
   const [selectedDate1, setSelectedDate1] = useState('');
   const [selectedDate2, setSelectedDate2] = useState('');
@@ -23,11 +32,31 @@ export default function Photos() {
   const [uploadDate, setUploadDate] = useState(
     new Date().toISOString().split('T')[0]
   );
-  const [files, setFiles] = useState({
-    front: null,
+  
+  // Selection state
+  const [selectedPhotos, setSelectedPhotos] = useState({
+    front: null, // { id, baseUrl }
     side: null,
     back: null,
   });
+
+  // Picker state
+  const [isPickerOpen, setIsPickerOpen] = useState(false);
+  const [pickerTarget, setPickerTarget] = useState(null); // 'front', 'side', or 'back'
+  const [googlePhotos, setGooglePhotos] = useState([]);
+  const [isLoadingGooglePhotos, setIsLoadingGooglePhotos] = useState(false);
+
+  const checkAuth = useCallback(async () => {
+    try {
+      const response = await axios.get('/api/auth/status');
+      setIsAuthenticated(response.data.authenticated);
+    } catch (error) {
+      console.error('Error checking auth status:', error);
+      setIsAuthenticated(false);
+    } finally {
+      setIsCheckingAuth(false);
+    }
+  }, []);
 
   const fetchDates = useCallback(async () => {
     try {
@@ -52,92 +81,129 @@ export default function Photos() {
   }, []);
 
   useEffect(() => {
-    fetchDates();
-  }, [fetchDates]);
+    checkAuth();
+  }, [checkAuth]);
 
   useEffect(() => {
-    fetchPhotos(selectedDate1, setPhotos1);
-  }, [selectedDate1, fetchPhotos]);
+    if (isAuthenticated) {
+      fetchDates();
+    }
+  }, [isAuthenticated, fetchDates]);
 
   useEffect(() => {
-    fetchPhotos(selectedDate2, setPhotos2);
-  }, [selectedDate2, fetchPhotos]);
+    if (isAuthenticated) {
+      fetchPhotos(selectedDate1, setPhotos1);
+    }
+  }, [isAuthenticated, selectedDate1, fetchPhotos]);
 
-  const handleFileChange = (e) => {
-    setFiles({ ...files, [e.target.name]: e.target.files[0] });
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchPhotos(selectedDate2, setPhotos2);
+    }
+  }, [isAuthenticated, selectedDate2, fetchPhotos]);
+
+  const handleLogin = () => {
+    window.location.href = `${API_BASE_URL}/api/auth/google`;
   };
 
-  const handleUpload = async (e) => {
-    e.preventDefault();
-    const formData = new FormData();
-    formData.append('date', uploadDate);
-    if (files.front) formData.append('front', files.front);
-    if (files.side) formData.append('side', files.side);
-    if (files.back) formData.append('back', files.back);
-
+  const openPicker = async (target) => {
+    setPickerTarget(target);
+    setIsPickerOpen(true);
+    setIsLoadingGooglePhotos(true);
     try {
-      await axios.post('/api/photos', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-      alert('Photos uploaded successfully');
-      fetchDates();
-      if (uploadDate === selectedDate1) fetchPhotos(selectedDate1, setPhotos1);
-      if (uploadDate === selectedDate2) fetchPhotos(selectedDate2, setPhotos2);
-      setFiles({ front: null, side: null, back: null });
+      const response = await axios.get('/api/photos/google-photos');
+      setGooglePhotos(response.data.mediaItems || []);
     } catch (error) {
-      console.error('Error uploading photos:', error);
-      alert('Upload failed');
+      console.error('Error fetching Google Photos:', error);
+    } finally {
+      setIsLoadingGooglePhotos(false);
     }
   };
 
-  const ImageBox = ({ path, side, maxHeight = 'none' }) => (
-    <Box sx={{ width: '100%', mb: 2, textAlign: 'center' }}>
-      <Typography
-        variant="caption"
-        display="block"
-        align="center"
-        sx={{ fontWeight: 'bold', mb: 0.5, color: 'text.secondary' }}
-      >
-        {side.toUpperCase()}
-      </Typography>
-      {path ? (
-        <Box
-          component="img"
-          src={`/${path}`}
-          alt={side}
-          sx={{
-            width: '100%',
-            height: 'auto',
-            maxHeight: maxHeight,
-            objectFit: 'contain',
-            borderRadius: 1,
-            border: '1px solid',
-            borderColor: 'divider',
-            display: 'block',
-            margin: '0 auto',
-            boxShadow: 1,
-          }}
-        />
-      ) : (
-        <Box
-          sx={{
-            bgcolor: 'action.hover',
-            aspectRatio: '3/4',
-            borderRadius: 1,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            border: '1px dashed',
-            borderColor: 'divider',
-          }}
+  const selectPhoto = (photo) => {
+    setSelectedPhotos({
+      ...selectedPhotos,
+      [pickerTarget]: { id: photo.id, baseUrl: photo.baseUrl }
+    });
+    setIsPickerOpen(false);
+  };
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+    const payload = {
+      date: uploadDate,
+      front_google_id: selectedPhotos.front?.id,
+      side_google_id: selectedPhotos.side?.id,
+      back_google_id: selectedPhotos.back?.id,
+    };
+
+    try {
+      await axios.post('/api/photos', payload);
+      alert('Photos saved successfully');
+      fetchDates();
+      if (uploadDate === selectedDate1) fetchPhotos(selectedDate1, setPhotos1);
+      if (uploadDate === selectedDate2) fetchPhotos(selectedDate2, setPhotos2);
+      setSelectedPhotos({ front: null, side: null, back: null });
+    } catch (error) {
+      console.error('Error saving photos:', error);
+      alert('Save failed');
+    }
+  };
+
+  const ImageBox = ({ path, side, maxHeight = 'none' }) => {
+    // Determine if the path is a full URL or a relative path
+    const isFullUrl = path?.startsWith('http');
+    const src = isFullUrl ? path : (path ? `/${path}` : null);
+
+    return (
+      <Box sx={{ width: '100%', mb: 2, textAlign: 'center' }}>
+        <Typography
+          variant="caption"
+          display="block"
+          align="center"
+          sx={{ fontWeight: 'bold', mb: 0.5, color: 'text.secondary' }}
         >
-          <Typography variant="caption" color="text.secondary">
-            No Image
-          </Typography>
-        </Box>
-      )}
-    </Box>
-  );
+          {side.toUpperCase()}
+        </Typography>
+        {path ? (
+          <Box
+            component="img"
+            src={src}
+            alt={side}
+            sx={{
+              width: '100%',
+              height: 'auto',
+              maxHeight: maxHeight,
+              objectFit: 'contain',
+              borderRadius: 1,
+              border: '1px solid',
+              borderColor: 'divider',
+              display: 'block',
+              margin: '0 auto',
+              boxShadow: 1,
+            }}
+          />
+        ) : (
+          <Box
+            sx={{
+              bgcolor: 'action.hover',
+              aspectRatio: '3/4',
+              borderRadius: 1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              border: '1px dashed',
+              borderColor: 'divider',
+            }}
+          >
+            <Typography variant="caption" color="text.secondary">
+              No Image
+            </Typography>
+          </Box>
+        )}
+      </Box>
+    );
+  };
 
   const renderSingleView = () => (
     <Box sx={{ mt: 1 }}>
@@ -146,7 +212,7 @@ export default function Photos() {
       </Typography>
       <Grid container spacing={2}>
         {['front', 'side', 'back'].map((side) => (
-          <Grid size={4} key={side}>
+          <Grid key={side} size={4}>
             <ImageBox
               path={photos1?.[`${side}_path`]}
               side={side}
@@ -202,20 +268,44 @@ export default function Photos() {
     </Box>
   );
 
+  if (isCheckingAuth) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', p: 5 }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <Box sx={{ p: 3, textAlign: 'center' }}>
+        <Typography variant="h5" gutterBottom>
+          Connect to Google Photos
+        </Typography>
+        <Typography variant="body1" sx={{ mb: 3 }}>
+          To use this feature, you need to sign in with your Google account.
+        </Typography>
+        <Button variant="contained" color="primary" onClick={handleLogin}>
+          Sign in with Google
+        </Button>
+      </Box>
+    );
+  }
+
   return (
     <Box sx={{ flexGrow: 1 }}>
       <Typography variant="h4" gutterBottom>
-        Progress Photos
+        Progress Photos (Google Photos)
       </Typography>
 
       <Grid container spacing={3}>
-        {/* Upload Section - 1/3 of the width */}
+        {/* Selection Section - 1/3 of the width */}
         <Grid size={{ xs: 12, md: 4 }}>
           <Paper sx={{ p: 2 }}>
             <Typography variant="h6" gutterBottom>
-              Upload Photos
+              Select Photos
             </Typography>
-            <form onSubmit={handleUpload}>
+            <form onSubmit={handleSave}>
               <TextField
                 fullWidth
                 label="Date"
@@ -226,57 +316,42 @@ export default function Photos() {
                 InputLabelProps={{ shrink: true }}
                 required
               />
-              <Button
-                variant="outlined"
-                component="label"
-                fullWidth
-                sx={{ mb: 1, textTransform: 'none' }}
-              >
-                {files.front
-                  ? `Front: ${files.front.name}`
-                  : 'Select Front Photo'}
-                <input
-                  type="file"
-                  name="front"
-                  hidden
-                  onChange={handleFileChange}
-                />
-              </Button>
-              <Button
-                variant="outlined"
-                component="label"
-                fullWidth
-                sx={{ mb: 1, textTransform: 'none' }}
-              >
-                {files.side ? `Side: ${files.side.name}` : 'Select Side Photo'}
-                <input
-                  type="file"
-                  name="side"
-                  hidden
-                  onChange={handleFileChange}
-                />
-              </Button>
-              <Button
-                variant="outlined"
-                component="label"
-                fullWidth
-                sx={{ mb: 2, textTransform: 'none' }}
-              >
-                {files.back ? `Back: ${files.back.name}` : 'Select Back Photo'}
-                <input
-                  type="file"
-                  name="back"
-                  hidden
-                  onChange={handleFileChange}
-                />
-              </Button>
+              
+              {['front', 'side', 'back'].map((side) => (
+                <Box key={side} sx={{ mb: 2 }}>
+                  <Typography variant="subtitle2" gutterBottom sx={{ textTransform: 'capitalize' }}>
+                    {side} Photo
+                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    {selectedPhotos[side] ? (
+                      <Box
+                        component="img"
+                        src={selectedPhotos[side].baseUrl}
+                        sx={{ width: 60, height: 60, objectFit: 'cover', borderRadius: 1 }}
+                      />
+                    ) : (
+                      <Box sx={{ width: 60, height: 60, bgcolor: 'action.hover', borderRadius: 1 }} />
+                    )}
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      onClick={() => openPicker(side)}
+                      sx={{ textTransform: 'none' }}
+                    >
+                      {selectedPhotos[side] ? 'Change' : 'Pick Photo'}
+                    </Button>
+                  </Box>
+                </Box>
+              ))}
+
               <Button
                 variant="contained"
                 type="submit"
                 color="primary"
                 fullWidth
+                disabled={!selectedPhotos.front && !selectedPhotos.side && !selectedPhotos.back}
               >
-                Save Photos
+                Save Selection
               </Button>
             </form>
           </Paper>
@@ -349,6 +424,50 @@ export default function Photos() {
           </Paper>
         </Grid>
       </Grid>
+
+      {/* Google Photo Picker Dialog */}
+      <Dialog open={isPickerOpen} onClose={() => setIsPickerOpen(false)} maxWidth="md" fullWidth>
+        <DialogTitle>Select {pickerTarget} Photo</DialogTitle>
+        <DialogContent dividers>
+          {isLoadingGooglePhotos ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', p: 5 }}>
+              <CircularProgress />
+            </Box>
+          ) : (
+            <Grid container spacing={1}>
+              {googlePhotos.map((photo) => (
+                <Grid size={{ xs: 4, sm: 3 }} key={photo.id}>
+                  <Box
+                    component="img"
+                    src={`${photo.baseUrl}=w300`}
+                    sx={{
+                      width: '100%',
+                      aspectRatio: '1',
+                      objectFit: 'cover',
+                      cursor: 'pointer',
+                      borderRadius: 1,
+                      border: '2px solid transparent',
+                      '&:hover': {
+                        borderColor: 'primary.main',
+                        opacity: 0.8
+                      }
+                    }}
+                    onClick={() => selectPhoto(photo)}
+                  />
+                </Grid>
+              ))}
+              {googlePhotos.length === 0 && (
+                <Typography variant="body1" sx={{ p: 2 }}>
+                  No photos found in your Google Photos library.
+                </Typography>
+              )}
+            </Grid>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setIsPickerOpen(false)}>Cancel</Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

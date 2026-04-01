@@ -6,9 +6,9 @@ import {
   act,
 } from '@testing-library/react';
 import Measurements from './Measurements';
-import axios from '../api';
+import api from '../api';
 
-jest.mock('axios');
+jest.mock('../api');
 
 // Mock Recharts
 jest.mock('recharts', () => {
@@ -57,7 +57,7 @@ const mockHistory = [
 
 describe('Measurements Component', () => {
   beforeEach(() => {
-    axios.get.mockResolvedValue({ data: mockHistory });
+    api.get.mockResolvedValue({ data: mockHistory });
   });
 
   afterEach(() => {
@@ -81,7 +81,7 @@ describe('Measurements Component', () => {
   });
 
   test('submits form correctly with new fields', async () => {
-    axios.post.mockResolvedValue({ data: { success: true } });
+    api.post.mockResolvedValue({ data: { success: true } });
     await act(async () => {
       render(<Measurements />);
     });
@@ -105,7 +105,7 @@ describe('Measurements Component', () => {
     });
 
     await waitFor(() => {
-      expect(axios.post).toHaveBeenCalledWith(
+      expect(api.post).toHaveBeenCalledWith(
         '/api/measurements',
         expect.objectContaining({
           bodyweight: '82',

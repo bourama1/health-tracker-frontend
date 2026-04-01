@@ -1,18 +1,28 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import App from './App';
-import axios from 'axios';
+import api from './api';
 
-jest.mock('axios');
+jest.mock('./api');
 
 test('renders dashboard title', async () => {
-  axios.get.mockResolvedValue({ data: [] });
+  api.get.mockImplementation((url) => {
+    if (url === '/api/auth/status') {
+      return Promise.resolve({ data: { authenticated: true } });
+    }
+    return Promise.resolve({ data: [] });
+  });
   render(<App />);
   const linkElement = await screen.findByText(/Personal Health Dashboard/i);
   expect(linkElement).toBeInTheDocument();
 });
 
 test('navigates to different tabs', async () => {
-  axios.get.mockResolvedValue({ data: [] });
+  api.get.mockImplementation((url) => {
+    if (url === '/api/auth/status') {
+      return Promise.resolve({ data: { authenticated: true } });
+    }
+    return Promise.resolve({ data: [] });
+  });
   render(<App />);
 
   // Default tab is Workouts
