@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Comprehensive README.md with project overview, features, and setup instructions.
-- MIT License file.
+- ISC License file.
 - Contributing guidelines (CONTRIBUTING.md).
 - Code of Conduct (CODE_OF_CONDUCT.md).
 - Security policy (SECURITY.md).

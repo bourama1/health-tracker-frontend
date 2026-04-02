@@ -50,4 +50,4 @@ If you find a bug, please open an issue and include:
 
 ## ⚖️ License
 
-By contributing, you agree that your contributions will be licensed under its MIT License.
+By contributing, you agree that your contributions will be licensed under its ISC License.
