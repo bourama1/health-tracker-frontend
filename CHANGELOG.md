@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+
 - Comprehensive README.md with project overview, features, and setup instructions.
 - ISC License file.
 - Contributing guidelines (CONTRIBUTING.md).
@@ -18,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.1.0] - 2025-05-15
 
 ### Added
+
 - Initial project release.
 - Core features: Workouts, Measurements, Photos, and Sleep tracking.
 - Material UI integration for a modern, responsive interface.

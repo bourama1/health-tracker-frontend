@@ -34,19 +34,20 @@ We love your input! We want to make contributing to this project as easy and tra
 
 ## 📝 Pull Request Guidelines
 
--   The PR title should be descriptive and summarize the changes.
--   Include a description of what was changed and why.
--   Link to any related issues.
--   Ensure all tests pass before submitting.
--   Adhere to the existing coding style.
+- The PR title should be descriptive and summarize the changes.
+- Include a description of what was changed and why.
+- Link to any related issues.
+- Ensure all tests pass before submitting.
+- Adhere to the existing coding style.
 
 ## 🐛 Reporting Bugs
 
 If you find a bug, please open an issue and include:
--   A clear description of the bug.
--   Steps to reproduce the issue.
--   Expected and actual behavior.
--   Relevant screenshots or logs.
+
+- A clear description of the bug.
+- Steps to reproduce the issue.
+- Expected and actual behavior.
+- Relevant screenshots or logs.
 
 ## ⚖️ License
 

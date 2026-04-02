@@ -32,7 +32,7 @@ export default function Photos() {
   const [uploadDate, setUploadDate] = useState(
     new Date().toISOString().split('T')[0]
   );
-  
+
   // Selection state
   const [selectedPhotos, setSelectedPhotos] = useState({
     front: null, // { id, baseUrl }
@@ -114,7 +114,10 @@ export default function Photos() {
       const response = await axios.get('/api/photos/google-photos');
       setGooglePhotos(response.data.mediaItems || []);
     } catch (error) {
-      console.error('Error fetching Google Photos:', error.response?.data || error);
+      console.error(
+        'Error fetching Google Photos:',
+        error.response?.data || error
+      );
     } finally {
       setIsLoadingGooglePhotos(false);
     }
@@ -123,7 +126,7 @@ export default function Photos() {
   const selectPhoto = (photo) => {
     setSelectedPhotos({
       ...selectedPhotos,
-      [pickerTarget]: { id: photo.id, baseUrl: photo.baseUrl }
+      [pickerTarget]: { id: photo.id, baseUrl: photo.baseUrl },
     });
     setIsPickerOpen(false);
   };
@@ -153,7 +156,7 @@ export default function Photos() {
   const ImageBox = ({ path, side, maxHeight = 'none' }) => {
     // Determine if the path is a full URL or a relative path
     const isFullUrl = path?.startsWith('http');
-    const src = isFullUrl ? path : (path ? `/${path}` : null);
+    const src = isFullUrl ? path : path ? `/${path}` : null;
 
     return (
       <Box sx={{ width: '100%', mb: 2, textAlign: 'center' }}>
@@ -316,10 +319,14 @@ export default function Photos() {
                 InputLabelProps={{ shrink: true }}
                 required
               />
-              
+
               {['front', 'side', 'back'].map((side) => (
                 <Box key={side} sx={{ mb: 2 }}>
-                  <Typography variant="subtitle2" gutterBottom sx={{ textTransform: 'capitalize' }}>
+                  <Typography
+                    variant="subtitle2"
+                    gutterBottom
+                    sx={{ textTransform: 'capitalize' }}
+                  >
                     {side} Photo
                   </Typography>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -327,10 +334,22 @@ export default function Photos() {
                       <Box
                         component="img"
                         src={selectedPhotos[side].baseUrl}
-                        sx={{ width: 60, height: 60, objectFit: 'cover', borderRadius: 1 }}
+                        sx={{
+                          width: 60,
+                          height: 60,
+                          objectFit: 'cover',
+                          borderRadius: 1,
+                        }}
                       />
                     ) : (
-                      <Box sx={{ width: 60, height: 60, bgcolor: 'action.hover', borderRadius: 1 }} />
+                      <Box
+                        sx={{
+                          width: 60,
+                          height: 60,
+                          bgcolor: 'action.hover',
+                          borderRadius: 1,
+                        }}
+                      />
                     )}
                     <Button
                       variant="outlined"
@@ -349,7 +368,11 @@ export default function Photos() {
                 type="submit"
                 color="primary"
                 fullWidth
-                disabled={!selectedPhotos.front && !selectedPhotos.side && !selectedPhotos.back}
+                disabled={
+                  !selectedPhotos.front &&
+                  !selectedPhotos.side &&
+                  !selectedPhotos.back
+                }
               >
                 Save Selection
               </Button>
@@ -426,7 +449,12 @@ export default function Photos() {
       </Grid>
 
       {/* Google Photo Picker Dialog */}
-      <Dialog open={isPickerOpen} onClose={() => setIsPickerOpen(false)} maxWidth="md" fullWidth>
+      <Dialog
+        open={isPickerOpen}
+        onClose={() => setIsPickerOpen(false)}
+        maxWidth="md"
+        fullWidth
+      >
         <DialogTitle>Select {pickerTarget} Photo</DialogTitle>
         <DialogContent dividers>
           {isLoadingGooglePhotos ? (
@@ -449,8 +477,8 @@ export default function Photos() {
                       border: '2px solid transparent',
                       '&:hover': {
                         borderColor: 'primary.main',
-                        opacity: 0.8
-                      }
+                        opacity: 0.8,
+                      },
                     }}
                     onClick={() => selectPhoto(photo)}
                   />

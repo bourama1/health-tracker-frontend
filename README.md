@@ -29,18 +29,21 @@ A comprehensive personal health and fitness dashboard built with React, Material
 ### Installation
 
 1.  **Clone the repository**:
+
     ```bash
     git clone https://github.com/your-username/health-tracker-frontend.git
     cd health-tracker-frontend
     ```
 
 2.  **Install dependencies**:
+
     ```bash
     npm install
     ```
 
 3.  **Configure environment variables**:
     Create a `.env` file in the root directory and add your API URL:
+
     ```env
     REACT_APP_API_URL=http://localhost:5000
     ```
@@ -54,11 +57,13 @@ A comprehensive personal health and fitness dashboard built with React, Material
 ## 🧪 Running Tests
 
 To run the test suite in interactive mode:
+
 ```bash
 npm test
 ```
 
 To run tests in CI mode:
+
 ```bash
 CI=true npm test
 ```
@@ -66,9 +71,11 @@ CI=true npm test
 ## 📦 Building for Production
 
 To create an optimized production build:
+
 ```bash
 npm run build
 ```
+
 The build artifacts will be stored in the `build/` directory.
 
 ## 🤝 Contributing

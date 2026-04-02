@@ -118,7 +118,15 @@ export default function App() {
   if (isCheckingAuth) {
     return (
       <ThemeProvider theme={theme}>
-        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', bgcolor: 'background.default' }}>
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            height: '100vh',
+            bgcolor: 'background.default',
+          }}
+        >
           <CircularProgress />
         </Box>
       </ThemeProvider>
@@ -129,32 +137,51 @@ export default function App() {
     return (
       <ThemeProvider theme={theme}>
         <CssBaseline />
-        <Box sx={{ 
-          display: 'flex', 
-          justifyContent: 'center', 
-          alignItems: 'center', 
-          height: '100vh', 
-          bgcolor: 'background.default',
-          backgroundImage: 'radial-gradient(circle at 2% 10%, rgba(25, 118, 210, 0.05) 0%, transparent 20%), radial-gradient(circle at 98% 90%, rgba(25, 118, 210, 0.05) 0%, transparent 20%)'
-        }}>
-          <Paper elevation={3} sx={{ p: 5, textAlign: 'center', maxWidth: 400, borderRadius: 3 }}>
-            <Typography variant="h4" gutterBottom fontWeight="bold" color="primary">
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            height: '100vh',
+            bgcolor: 'background.default',
+            backgroundImage:
+              'radial-gradient(circle at 2% 10%, rgba(25, 118, 210, 0.05) 0%, transparent 20%), radial-gradient(circle at 98% 90%, rgba(25, 118, 210, 0.05) 0%, transparent 20%)',
+          }}
+        >
+          <Paper
+            elevation={3}
+            sx={{ p: 5, textAlign: 'center', maxWidth: 400, borderRadius: 3 }}
+          >
+            <Typography
+              variant="h4"
+              gutterBottom
+              fontWeight="bold"
+              color="primary"
+            >
               Health Tracker
             </Typography>
             <Typography variant="body1" sx={{ mb: 4, color: 'text.secondary' }}>
               Track your progress, workouts, and health data in one place.
             </Typography>
-            <Button 
-              variant="contained" 
-              size="large" 
-              fullWidth 
+            <Button
+              variant="contained"
+              size="large"
+              fullWidth
               startIcon={<GoogleIcon />}
               onClick={handleLogin}
-              sx={{ py: 1.5, textTransform: 'none', fontSize: '1.1rem', borderRadius: 2 }}
+              sx={{
+                py: 1.5,
+                textTransform: 'none',
+                fontSize: '1.1rem',
+                borderRadius: 2,
+              }}
             >
               Sign in with Google
             </Button>
-            <Typography variant="caption" sx={{ mt: 3, display: 'block', color: 'text.disabled' }}>
+            <Typography
+              variant="caption"
+              sx={{ mt: 3, display: 'block', color: 'text.disabled' }}
+            >
               We'll use your Google Photos for progress tracking.
             </Typography>
           </Paper>
@@ -180,14 +207,21 @@ export default function App() {
             >
               Personal Health Dashboard
             </Typography>
-            
+
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
               {user && (
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Typography variant="body2" sx={{ display: { xs: 'none', sm: 'block' } }}>
+                  <Typography
+                    variant="body2"
+                    sx={{ display: { xs: 'none', sm: 'block' } }}
+                  >
                     {user.name}
                   </Typography>
-                  <Avatar src={user.picture} alt={user.name} sx={{ width: 32, height: 32 }} />
+                  <Avatar
+                    src={user.picture}
+                    alt={user.name}
+                    sx={{ width: 32, height: 32 }}
+                  />
                 </Box>
               )}
               <Button color="inherit" onClick={handleLogout}>

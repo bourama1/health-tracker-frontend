@@ -25,7 +25,7 @@ const mockGooglePhotos = {
   mediaItems: [
     { id: 'g1', baseUrl: 'https://lh3.googleusercontent.com/g1' },
     { id: 'g2', baseUrl: 'https://lh3.googleusercontent.com/g2' },
-  ]
+  ],
 };
 
 describe('Photos Component', () => {
@@ -56,7 +56,9 @@ describe('Photos Component', () => {
     await act(async () => {
       render(<Photos />);
     });
-    expect(screen.getByText(/Progress Photos \(Google Photos\)/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Progress Photos \(Google Photos\)/i)
+    ).toBeInTheDocument();
 
     const date1Select = screen.getByLabelText(/Date 1/i);
     fireEvent.mouseDown(date1Select);
@@ -88,7 +90,10 @@ describe('Photos Component', () => {
     const frontImage = images.find(
       (img) => img.getAttribute('alt') === 'front'
     );
-    expect(frontImage).toHaveAttribute('src', 'https://lh3.googleusercontent.com/front');
+    expect(frontImage).toHaveAttribute(
+      'src',
+      'https://lh3.googleusercontent.com/front'
+    );
   });
 
   test('shows login screen when not authenticated', async () => {
@@ -104,6 +109,8 @@ describe('Photos Component', () => {
     });
 
     expect(screen.getByText(/Connect to Google Photos/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Sign in with Google/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /Sign in with Google/i })
+    ).toBeInTheDocument();
   });
 });
