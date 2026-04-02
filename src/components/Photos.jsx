@@ -114,7 +114,7 @@ export default function Photos() {
       const response = await axios.get('/api/photos/google-photos');
       setGooglePhotos(response.data.mediaItems || []);
     } catch (error) {
-      console.error('Error fetching Google Photos:', error);
+      console.error('Error fetching Google Photos:', error.response?.data || error);
     } finally {
       setIsLoadingGooglePhotos(false);
     }
