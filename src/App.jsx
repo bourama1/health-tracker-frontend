@@ -14,8 +14,11 @@ import {
   ListItemText,
   IconButton,
   Button,
+  Avatar,
   createTheme,
   ThemeProvider,
+  CircularProgress,
+  Paper,
 } from '@mui/material';
 import axios from './api';
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
@@ -24,34 +27,52 @@ import PhotoCameraIcon from '@mui/icons-material/PhotoCamera';
 import BedtimeIcon from '@mui/icons-material/Bedtime';
 import Brightness4Icon from '@mui/icons-material/Brightness4';
 import Brightness7Icon from '@mui/icons-material/Brightness7';
+import GoogleIcon from '@mui/icons-material/Google';
 import Measurements from './components/Measurements';
 import Photos from './components/Photos';
 import Sleep from './components/Sleep';
 import Workouts from './components/Workouts';
 
 const drawerWidth = 240;
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('Workouts');
   const [mode, setMode] = useState('dark');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [user, setUser] = useState(null);
 
   useEffect(() => {
     const checkAuth = async () => {
       try {
         const response = await axios.get('/api/auth/status');
-        setIsAuthenticated(response.data.authenticated);
+        if (response.data.authenticated) {
+          setIsAuthenticated(true);
+          setUser(response.data.user);
+        } else {
+          setIsAuthenticated(false);
+          setUser(null);
+        }
       } catch (error) {
         setIsAuthenticated(false);
+        setUser(null);
+      } finally {
+        setIsCheckingAuth(false);
       }
     };
     checkAuth();
-  }, [activeTab]);
+  }, []);
+
+  const handleLogin = () => {
+    window.location.href = `${API_BASE_URL}/api/auth/google`;
+  };
 
   const handleLogout = async () => {
     try {
       await axios.post('/api/auth/logout');
       setIsAuthenticated(false);
+      setUser(null);
       window.location.reload();
     } catch (error) {
       console.error('Logout failed:', error);
@@ -72,7 +93,6 @@ export default function App() {
     setMode((prevMode) => (prevMode === 'light' ? 'dark' : 'light'));
   };
 
-  // Placeholder components for the 4 main sections
   const renderContent = () => {
     switch (activeTab) {
       case 'Workouts':
@@ -95,6 +115,54 @@ export default function App() {
     { text: 'Sleep', icon: <BedtimeIcon /> },
   ];
 
+  if (isCheckingAuth) {
+    return (
+      <ThemeProvider theme={theme}>
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', bgcolor: 'background.default' }}>
+          <CircularProgress />
+        </Box>
+      </ThemeProvider>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <Box sx={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          alignItems: 'center', 
+          height: '100vh', 
+          bgcolor: 'background.default',
+          backgroundImage: 'radial-gradient(circle at 2% 10%, rgba(25, 118, 210, 0.05) 0%, transparent 20%), radial-gradient(circle at 98% 90%, rgba(25, 118, 210, 0.05) 0%, transparent 20%)'
+        }}>
+          <Paper elevation={3} sx={{ p: 5, textAlign: 'center', maxWidth: 400, borderRadius: 3 }}>
+            <Typography variant="h4" gutterBottom fontWeight="bold" color="primary">
+              Health Tracker
+            </Typography>
+            <Typography variant="body1" sx={{ mb: 4, color: 'text.secondary' }}>
+              Track your progress, workouts, and health data in one place.
+            </Typography>
+            <Button 
+              variant="contained" 
+              size="large" 
+              fullWidth 
+              startIcon={<GoogleIcon />}
+              onClick={handleLogin}
+              sx={{ py: 1.5, textTransform: 'none', fontSize: '1.1rem', borderRadius: 2 }}
+            >
+              Sign in with Google
+            </Button>
+            <Typography variant="caption" sx={{ mt: 3, display: 'block', color: 'text.disabled' }}>
+              We'll use your Google Photos for progress tracking.
+            </Typography>
+          </Paper>
+        </Box>
+      </ThemeProvider>
+    );
+  }
+
   return (
     <ThemeProvider theme={theme}>
       <Box sx={{ display: 'flex' }}>
@@ -112,14 +180,23 @@ export default function App() {
             >
               Personal Health Dashboard
             </Typography>
-            {isAuthenticated && (
-              <Button color="inherit" onClick={handleLogout} sx={{ mr: 2 }}>
+            
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              {user && (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Typography variant="body2" sx={{ display: { xs: 'none', sm: 'block' } }}>
+                    {user.name}
+                  </Typography>
+                  <Avatar src={user.picture} alt={user.name} sx={{ width: 32, height: 32 }} />
+                </Box>
+              )}
+              <Button color="inherit" onClick={handleLogout}>
                 Logout
               </Button>
-            )}
-            <IconButton onClick={toggleColorMode} color="inherit">
-              {mode === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
-            </IconButton>
+              <IconButton onClick={toggleColorMode} color="inherit">
+                {mode === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
+              </IconButton>
+            </Box>
           </Toolbar>
         </AppBar>
         <Drawer
