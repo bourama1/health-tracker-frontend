@@ -12,7 +12,16 @@ import {
   TableHead,
   TableRow,
   Grid,
+  CircularProgress,
+  Alert,
+  Snackbar,
+  Tooltip,
+  MenuItem,
+  Select,
+  FormControl,
+  InputLabel,
 } from '@mui/material';
+import SyncIcon from '@mui/icons-material/Sync';
 import axios from '../api';
 
 // Helper: minutes to H:mm
@@ -25,7 +34,7 @@ const minutesToHm = (minutes) => {
 
 // Helper: H:mm to minutes
 const hmToMinutes = (hm) => {
-  if (!hm || typeof hm !== 'string' || !hm.includes(':')) return hm; // Return as is if not H:mm
+  if (!hm || typeof hm !== 'string' || !hm.includes(':')) return hm;
   const [h, m] = hm.split(':').map(Number);
   if (isNaN(h) || isNaN(m)) return hm;
   return h * 60 + m;
@@ -42,6 +51,13 @@ export default function Sleep() {
     deep_sleep_minutes: '',
     rem_sleep_minutes: '',
   });
+
+  const [syncing, setSyncing] = useState(false);
+  const [syncDays, setSyncDays] = useState(30);
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+
+  const showSnackbar = (message, severity = 'success') =>
+    setSnackbar({ open: true, message, severity });
 
   const fetchHistory = async () => {
     try {
@@ -87,11 +103,66 @@ export default function Sleep() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  const handleGoogleFitSync = async () => {
+    setSyncing(true);
+    try {
+      const response = await axios.post(`/api/fit/sync-sleep?days=${syncDays}`);
+      showSnackbar(response.data.message, 'success');
+      fetchHistory();
+    } catch (err) {
+      const msg = err.response?.data?.error || 'Sync failed. Please try again.';
+      // Token expired — user needs to log in again to grant Fitness scopes
+      if (err.response?.status === 401) {
+        showSnackbar(
+          'Google session expired or Fitness permission not granted. Please log out and sign in again.',
+          'warning'
+        );
+      } else {
+        showSnackbar(msg, 'error');
+      }
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   return (
     <Box sx={{ flexGrow: 1 }}>
-      <Typography variant="h4" gutterBottom>
-        Sleep Tracking
-      </Typography>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+        <Typography variant="h4">Sleep Tracking</Typography>
+
+        {/* ── Google Fit sync controls ── */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <FormControl size="small" sx={{ minWidth: 110 }}>
+            <InputLabel id="sync-days-label">Sync period</InputLabel>
+            <Select
+              labelId="sync-days-label"
+              value={syncDays}
+              label="Sync period"
+              onChange={(e) => setSyncDays(e.target.value)}
+              disabled={syncing}
+            >
+              <MenuItem value={7}>Last 7 days</MenuItem>
+              <MenuItem value={30}>Last 30 days</MenuItem>
+              <MenuItem value={60}>Last 60 days</MenuItem>
+              <MenuItem value={90}>Last 90 days</MenuItem>
+            </Select>
+          </FormControl>
+
+          <Tooltip title="Pull sleep data from Google Fit (synced from your Ultrahuman ring)">
+            <span>
+              <Button
+                variant="outlined"
+                startIcon={syncing ? <CircularProgress size={16} /> : <SyncIcon />}
+                onClick={handleGoogleFitSync}
+                disabled={syncing}
+                sx={{ whiteSpace: 'nowrap' }}
+              >
+                {syncing ? 'Syncing…' : 'Sync from Google Fit'}
+              </Button>
+            </span>
+          </Tooltip>
+        </Box>
+      </Box>
 
       <Grid container spacing={3}>
         <Grid size={{ xs: 12, md: 4 }}>
@@ -216,6 +287,21 @@ export default function Sleep() {
           </TableContainer>
         </Grid>
       </Grid>
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
+          severity={snackbar.severity}
+          variant="filled"
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }
