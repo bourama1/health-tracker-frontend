@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Box,
   Button,
@@ -11,10 +11,6 @@ import {
   InputLabel,
   Select,
   Divider,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   CircularProgress,
 } from '@mui/material';
 import axios from '../api';
@@ -32,19 +28,27 @@ export default function Photos() {
   const [uploadDate, setUploadDate] = useState(
     new Date().toISOString().split('T')[0]
   );
+  const [isUploading, setIsUploading] = useState(false);
 
-  // Selection state
-  const [selectedPhotos, setSelectedPhotos] = useState({
-    front: null, // { id, baseUrl }
+  // Selection state for Cloudinary
+  const [selectedFiles, setSelectedFiles] = useState({
+    front: null,
     side: null,
     back: null,
   });
 
-  // Picker state
-  const [isPickerOpen, setIsPickerOpen] = useState(false);
-  const [pickerTarget, setPickerTarget] = useState(null); // 'front', 'side', or 'back'
-  const [googlePhotos, setGooglePhotos] = useState([]);
-  const [isLoadingGooglePhotos, setIsLoadingGooglePhotos] = useState(false);
+  // Preview URLs
+  const [previews, setPreviews] = useState({
+    front: null,
+    side: null,
+    back: null,
+  });
+
+  const fileInputRefs = {
+    front: useRef(),
+    side: useRef(),
+    back: useRef(),
+  };
 
   const checkAuth = useCallback(async () => {
     try {
@@ -106,57 +110,50 @@ export default function Photos() {
     window.location.href = `${API_BASE_URL}/api/auth/google`;
   };
 
-  const openPicker = async (target) => {
-    setPickerTarget(target);
-    setIsPickerOpen(true);
-    setIsLoadingGooglePhotos(true);
-    try {
-      const response = await axios.get('/api/photos/google-photos');
-      setGooglePhotos(response.data.mediaItems || []);
-    } catch (error) {
-      console.error(
-        'Error fetching Google Photos:',
-        error.response?.data || error
-      );
-    } finally {
-      setIsLoadingGooglePhotos(false);
+  const handleFileChange = (target, e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setSelectedFiles((prev) => ({ ...prev, [target]: file }));
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPreviews((prev) => ({ ...prev, [target]: reader.result }));
+      };
+      reader.readAsDataURL(file);
     }
-  };
-
-  const selectPhoto = (photo) => {
-    setSelectedPhotos({
-      ...selectedPhotos,
-      [pickerTarget]: { id: photo.id, baseUrl: photo.baseUrl },
-    });
-    setIsPickerOpen(false);
   };
 
   const handleSave = async (e) => {
     e.preventDefault();
-    const payload = {
-      date: uploadDate,
-      front_google_id: selectedPhotos.front?.id,
-      side_google_id: selectedPhotos.side?.id,
-      back_google_id: selectedPhotos.back?.id,
-    };
+    setIsUploading(true);
+    
+    const formData = new FormData();
+    formData.append('date', uploadDate);
+    if (selectedFiles.front) formData.append('front', selectedFiles.front);
+    if (selectedFiles.side) formData.append('side', selectedFiles.side);
+    if (selectedFiles.back) formData.append('back', selectedFiles.back);
 
     try {
-      await axios.post('/api/photos', payload);
-      alert('Photos saved successfully');
+      await axios.post('/api/photos', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      alert('Photos uploaded successfully to Cloudinary');
       fetchDates();
       if (uploadDate === selectedDate1) fetchPhotos(selectedDate1, setPhotos1);
       if (uploadDate === selectedDate2) fetchPhotos(selectedDate2, setPhotos2);
-      setSelectedPhotos({ front: null, side: null, back: null });
+      
+      // Reset state
+      setSelectedFiles({ front: null, side: null, back: null });
+      setPreviews({ front: null, side: null, back: null });
     } catch (error) {
-      console.error('Error saving photos:', error);
-      alert('Save failed');
+      console.error('Error uploading photos:', error);
+      alert('Upload failed');
+    } finally {
+      setIsUploading(false);
     }
   };
 
   const ImageBox = ({ path, side, maxHeight = 'none' }) => {
-    // Determine if the path is a full URL or a relative path
-    const isFullUrl = path?.startsWith('http');
-    const src = isFullUrl ? path : path ? `/${path}` : null;
+    const src = path; // In Cloudinary, path is the full URL
 
     return (
       <Box sx={{ width: '100%', mb: 2, textAlign: 'center' }}>
@@ -215,7 +212,7 @@ export default function Photos() {
       </Typography>
       <Grid container spacing={2}>
         {['front', 'side', 'back'].map((side) => (
-          <Grid key={side} size={4}>
+          <Grid key={side} item xs={4}>
             <ImageBox
               path={photos1?.[`${side}_path`]}
               side={side}
@@ -230,7 +227,7 @@ export default function Photos() {
   const renderComparisonView = () => (
     <Box sx={{ mt: 1 }}>
       <Grid container spacing={2} sx={{ mb: 1 }}>
-        <Grid size={6}>
+        <Grid item xs={6}>
           <Typography
             variant="h6"
             align="center"
@@ -239,7 +236,7 @@ export default function Photos() {
             {selectedDate1}
           </Typography>
         </Grid>
-        <Grid size={6}>
+        <Grid item xs={6}>
           <Typography
             variant="h6"
             align="center"
@@ -252,14 +249,14 @@ export default function Photos() {
       <Divider sx={{ mb: 2 }} />
       {['front', 'side', 'back'].map((side) => (
         <Grid container spacing={3} key={side} sx={{ mb: 4 }}>
-          <Grid size={6}>
+          <Grid item xs={6}>
             <ImageBox
               path={photos1?.[`${side}_path`]}
               side={side}
               maxHeight={800}
             />
           </Grid>
-          <Grid size={6}>
+          <Grid item xs={6}>
             <ImageBox
               path={photos2?.[`${side}_path`]}
               side={side}
@@ -283,10 +280,10 @@ export default function Photos() {
     return (
       <Box sx={{ p: 3, textAlign: 'center' }}>
         <Typography variant="h5" gutterBottom>
-          Connect to Google Photos
+          Sign in to Track Progress
         </Typography>
         <Typography variant="body1" sx={{ mb: 3 }}>
-          To use this feature, you need to sign in with your Google account.
+          Use your Google account to securely store and compare your progress photos.
         </Typography>
         <Button variant="contained" color="primary" onClick={handleLogin}>
           Sign in with Google
@@ -298,15 +295,15 @@ export default function Photos() {
   return (
     <Box sx={{ flexGrow: 1 }}>
       <Typography variant="h4" gutterBottom>
-        Progress Photos (Google Photos)
+        Progress Photos (Cloudinary)
       </Typography>
 
       <Grid container spacing={3}>
         {/* Selection Section - 1/3 of the width */}
-        <Grid size={{ xs: 12, md: 4 }}>
+        <Grid item xs={12} md={4}>
           <Paper sx={{ p: 2 }}>
             <Typography variant="h6" gutterBottom>
-              Select Photos
+              Upload New Photos
             </Typography>
             <form onSubmit={handleSave}>
               <TextField
@@ -330,10 +327,10 @@ export default function Photos() {
                     {side} Photo
                   </Typography>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    {selectedPhotos[side] ? (
+                    {previews[side] ? (
                       <Box
                         component="img"
-                        src={selectedPhotos[side].baseUrl}
+                        src={previews[side]}
                         sx={{
                           width: 60,
                           height: 60,
@@ -351,13 +348,20 @@ export default function Photos() {
                         }}
                       />
                     )}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      style={{ display: 'none' }}
+                      ref={fileInputRefs[side]}
+                      onChange={(e) => handleFileChange(side, e)}
+                    />
                     <Button
                       variant="outlined"
                       size="small"
-                      onClick={() => openPicker(side)}
+                      onClick={() => fileInputRefs[side].current.click()}
                       sx={{ textTransform: 'none' }}
                     >
-                      {selectedPhotos[side] ? 'Change' : 'Pick Photo'}
+                      {previews[side] ? 'Change' : 'Select File'}
                     </Button>
                   </Box>
                 </Box>
@@ -369,22 +373,23 @@ export default function Photos() {
                 color="primary"
                 fullWidth
                 disabled={
-                  !selectedPhotos.front &&
-                  !selectedPhotos.side &&
-                  !selectedPhotos.back
+                  isUploading ||
+                  (!selectedFiles.front &&
+                   !selectedFiles.side &&
+                   !selectedFiles.back)
                 }
               >
-                Save Selection
+                {isUploading ? <CircularProgress size={24} color="inherit" /> : 'Upload to Cloudinary'}
               </Button>
             </form>
           </Paper>
         </Grid>
 
         {/* View & Compare Section - 2/3 of the width */}
-        <Grid size={{ xs: 12, md: 8 }}>
+        <Grid item xs={12} md={8}>
           <Paper sx={{ p: 2, minHeight: 400 }}>
             <Grid container spacing={2}>
-              <Grid size={6}>
+              <Grid item xs={6}>
                 <FormControl fullWidth>
                   <InputLabel id="date1-label">Date 1</InputLabel>
                   <Select
@@ -403,7 +408,7 @@ export default function Photos() {
                   </Select>
                 </FormControl>
               </Grid>
-              <Grid size={6}>
+              <Grid item xs={6}>
                 <FormControl fullWidth disabled={!selectedDate1}>
                   <InputLabel id="date2-label">Date 2 (Compare)</InputLabel>
                   <Select
@@ -447,55 +452,6 @@ export default function Photos() {
           </Paper>
         </Grid>
       </Grid>
-
-      {/* Google Photo Picker Dialog */}
-      <Dialog
-        open={isPickerOpen}
-        onClose={() => setIsPickerOpen(false)}
-        maxWidth="md"
-        fullWidth
-      >
-        <DialogTitle>Select {pickerTarget} Photo</DialogTitle>
-        <DialogContent dividers>
-          {isLoadingGooglePhotos ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', p: 5 }}>
-              <CircularProgress />
-            </Box>
-          ) : (
-            <Grid container spacing={1}>
-              {googlePhotos.map((photo) => (
-                <Grid size={{ xs: 4, sm: 3 }} key={photo.id}>
-                  <Box
-                    component="img"
-                    src={`${photo.baseUrl}=w300`}
-                    sx={{
-                      width: '100%',
-                      aspectRatio: '1',
-                      objectFit: 'cover',
-                      cursor: 'pointer',
-                      borderRadius: 1,
-                      border: '2px solid transparent',
-                      '&:hover': {
-                        borderColor: 'primary.main',
-                        opacity: 0.8,
-                      },
-                    }}
-                    onClick={() => selectPhoto(photo)}
-                  />
-                </Grid>
-              ))}
-              {googlePhotos.length === 0 && (
-                <Typography variant="body1" sx={{ p: 2 }}>
-                  No photos found in your Google Photos library.
-                </Typography>
-              )}
-            </Grid>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setIsPickerOpen(false)}>Cancel</Button>
-        </DialogActions>
-      </Dialog>
     </Box>
   );
 }
