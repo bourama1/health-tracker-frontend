@@ -1,21 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
-  Button,
-  TextField,
   Typography,
   Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   Grid,
-  MenuItem,
+  TextField,
+  Button,
   FormControl,
   InputLabel,
   Select,
+  MenuItem,
+  CircularProgress,
+  Alert,
 } from '@mui/material';
 import {
   LineChart,
@@ -29,8 +25,21 @@ import {
 } from 'recharts';
 import axios from '../api';
 
+const measurementOptions = [
+  { label: 'Bodyweight (kg)', value: 'bodyweight' },
+  { label: 'Body Fat (%)', value: 'body_fat' },
+  { label: 'Chest (cm)', value: 'chest' },
+  { label: 'Waist (cm)', value: 'waist' },
+  { label: 'Biceps (cm)', value: 'biceps' },
+  { label: 'Forearm (cm)', value: 'forearm' },
+  { label: 'Calf (cm)', value: 'calf' },
+  { label: 'Thigh (cm)', value: 'thigh' },
+];
+
 export default function Measurements() {
-  const [history, setHistory] = useState([]);
+  const [measurements, setMeasurements] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [selectedMeasurement, setSelectedMeasurement] = useState('bodyweight');
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
@@ -44,54 +53,38 @@ export default function Measurements() {
     thigh: '',
   });
 
-  const measurementOptions = [
-    { value: 'bodyweight', label: 'Weight (kg)' },
-    { value: 'body_fat', label: 'Body Fat %' },
-    { value: 'chest', label: 'Chest (cm)' },
-    { value: 'waist', label: 'Waist (cm)' },
-    { value: 'biceps', label: 'Biceps (cm)' },
-    { value: 'forearm', label: 'Forearm (cm)' },
-    { value: 'calf', label: 'Calf (cm)' },
-    { value: 'thigh', label: 'Thigh (cm)' },
-  ];
-
-  // Fetch history on load
-  const fetchHistory = async () => {
+  const fetchMeasurements = useCallback(async () => {
     try {
       const response = await axios.get('/api/measurements');
-      // Sort history by date for the graph
-      const sortedData = response.data.sort(
-        (a, b) => new Date(a.date) - new Date(b.date)
-      );
-      setHistory(sortedData);
-    } catch (error) {
-      console.error('Error fetching data:', error);
+      setMeasurements(response.data);
+      setLoading(false);
+    } catch (err) {
+      console.error('Error fetching measurements:', err);
+      setError('Failed to load measurements');
+      setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    fetchHistory();
-  }, []);
+    fetchMeasurements();
+  }, [fetchMeasurements]);
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    // Create a copy of the data and convert empty strings to null
-    const submissionData = { ...formData };
-    Object.keys(submissionData).forEach((key) => {
-      if (key !== 'date' && submissionData[key] === '') {
-        submissionData[key] = null;
-      }
-    });
-
     try {
-      // Send the sanitized data
-      await axios.post('/api/measurements', submissionData);
-      fetchHistory();
-
-      // Reset numeric fields and keep current date
-      setFormData({
-        date: new Date().toISOString().split('T')[0],
+      await axios.post('/api/measurements', formData);
+      fetchMeasurements();
+      // Reset form (except date)
+      setFormData((prev) => ({
+        ...prev,
         bodyweight: '',
         body_fat: '',
         chest: '',
@@ -100,39 +93,44 @@ export default function Measurements() {
         forearm: '',
         calf: '',
         thigh: '',
-      });
-    } catch (error) {
-      console.error('Submission error details:', error.response?.data);
-      alert(
-        `Failed to save: ${error.response?.data?.error || 'Unknown error'}`
-      );
+      }));
+    } catch (err) {
+      console.error('Error saving measurement:', err);
+      alert('Failed to save measurement');
     }
   };
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  const handleMeasurementChange = (e) => {
+    setSelectedMeasurement(e.target.value);
   };
 
-  const handleMeasurementChange = (event) => {
-    setSelectedMeasurement(event.target.value);
-  };
-
-  // Filter data for the graph (remove entries without the selected measurement)
-  const chartData = history
-    .filter(
-      (entry) =>
-        entry[selectedMeasurement] !== null && entry[selectedMeasurement] !== ''
-    )
-    .map((entry) => ({
-      date: entry.date,
-      value: parseFloat(entry[selectedMeasurement]),
+  const chartData = measurements
+    .slice()
+    .reverse()
+    .map((m) => ({
+      date: m.date,
+      value: m[selectedMeasurement],
     }));
+
+  if (loading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{ flexGrow: 1 }}>
       <Typography variant="h4" gutterBottom>
         Body Measurements
       </Typography>
+
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
 
       <Grid container spacing={3}>
         {/* Form Section */}
@@ -145,10 +143,10 @@ export default function Measurements() {
               <TextField
                 fullWidth
                 label="Date"
-                type="date"
                 name="date"
+                type="date"
                 value={formData.date}
-                onChange={handleChange}
+                onChange={handleInputChange}
                 sx={{ mb: 2 }}
                 InputLabelProps={{ shrink: true }}
                 required
@@ -160,19 +158,21 @@ export default function Measurements() {
                     label="Weight (kg)"
                     name="bodyweight"
                     type="number"
+                    inputProps={{ step: '0.1' }}
                     value={formData.bodyweight}
-                    onChange={handleChange}
+                    onChange={handleInputChange}
                     sx={{ mb: 2 }}
                   />
                 </Grid>
                 <Grid size={6}>
                   <TextField
                     fullWidth
-                    label="Body Fat %"
+                    label="Body Fat (%)"
                     name="body_fat"
                     type="number"
+                    inputProps={{ step: '0.1' }}
                     value={formData.body_fat}
-                    onChange={handleChange}
+                    onChange={handleInputChange}
                     sx={{ mb: 2 }}
                   />
                 </Grid>
@@ -182,8 +182,9 @@ export default function Measurements() {
                     label="Chest (cm)"
                     name="chest"
                     type="number"
+                    inputProps={{ step: '0.1' }}
                     value={formData.chest}
-                    onChange={handleChange}
+                    onChange={handleInputChange}
                     sx={{ mb: 2 }}
                   />
                 </Grid>
@@ -193,8 +194,9 @@ export default function Measurements() {
                     label="Waist (cm)"
                     name="waist"
                     type="number"
+                    inputProps={{ step: '0.1' }}
                     value={formData.waist}
-                    onChange={handleChange}
+                    onChange={handleInputChange}
                     sx={{ mb: 2 }}
                   />
                 </Grid>
@@ -204,8 +206,9 @@ export default function Measurements() {
                     label="Biceps (cm)"
                     name="biceps"
                     type="number"
+                    inputProps={{ step: '0.1' }}
                     value={formData.biceps}
-                    onChange={handleChange}
+                    onChange={handleInputChange}
                     sx={{ mb: 2 }}
                   />
                 </Grid>
@@ -215,8 +218,9 @@ export default function Measurements() {
                     label="Forearm (cm)"
                     name="forearm"
                     type="number"
+                    inputProps={{ step: '0.1' }}
                     value={formData.forearm}
-                    onChange={handleChange}
+                    onChange={handleInputChange}
                     sx={{ mb: 2 }}
                   />
                 </Grid>
@@ -226,8 +230,9 @@ export default function Measurements() {
                     label="Calf (cm)"
                     name="calf"
                     type="number"
+                    inputProps={{ step: '0.1' }}
                     value={formData.calf}
-                    onChange={handleChange}
+                    onChange={handleInputChange}
                     sx={{ mb: 2 }}
                   />
                 </Grid>
@@ -237,15 +242,16 @@ export default function Measurements() {
                     label="Thigh (cm)"
                     name="thigh"
                     type="number"
+                    inputProps={{ step: '0.1' }}
                     value={formData.thigh}
-                    onChange={handleChange}
+                    onChange={handleInputChange}
                     sx={{ mb: 2 }}
                   />
                 </Grid>
               </Grid>
               <Button
-                variant="contained"
                 type="submit"
+                variant="contained"
                 fullWidth
                 color="primary"
               >
@@ -277,7 +283,7 @@ export default function Measurements() {
               </Select>
             </FormControl>
             <Box sx={{ width: '100%', height: 300 }}>
-              <ResponsiveContainer>
+              <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={chartData}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="date" />
@@ -301,42 +307,41 @@ export default function Measurements() {
           </Paper>
         </Grid>
 
-        {/* History Table Section */}
+        {/* List Section */}
         <Grid size={{ xs: 12, md: 8 }}>
-          <TableContainer component={Paper}>
-            <Table size="small">
-              <TableHead>
-                <TableRow sx={{ backgroundColor: 'action.hover' }}>
-                  <TableCell>Date</TableCell>
-                  <TableCell align="right">Weight</TableCell>
-                  <TableCell align="right">Fat %</TableCell>
-                  <TableCell align="right">Chest</TableCell>
-                  <TableCell align="right">Waist</TableCell>
-                  <TableCell align="right">Biceps</TableCell>
-                  <TableCell align="right">Forearm</TableCell>
-                  <TableCell align="right">Calf</TableCell>
-                  <TableCell align="right">Thigh</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {[...history].reverse().map((row) => (
-                  <TableRow key={row.id}>
-                    <TableCell>{row.date}</TableCell>
-                    <TableCell align="right">{row.bodyweight}</TableCell>
-                    <TableCell align="right">
-                      {row.body_fat ? row.body_fat + '%' : ''}
-                    </TableCell>
-                    <TableCell align="right">{row.chest}</TableCell>
-                    <TableCell align="right">{row.waist}</TableCell>
-                    <TableCell align="right">{row.biceps}</TableCell>
-                    <TableCell align="right">{row.forearm}</TableCell>
-                    <TableCell align="right">{row.calf}</TableCell>
-                    <TableCell align="right">{row.thigh}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
+          <Paper sx={{ p: 2, maxHeight: 800, overflow: 'auto' }}>
+            <Typography variant="h6" gutterBottom>
+              History
+            </Typography>
+            {measurements.map((m) => (
+              <Box
+                key={m.id}
+                sx={{
+                  p: 2,
+                  mb: 2,
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  borderRadius: 1,
+                }}
+              >
+                <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
+                  {m.date}
+                </Typography>
+                <Grid container spacing={1}>
+                  {measurementOptions.map((opt) => (
+                    <Grid key={opt.value} size={3}>
+                      <Typography variant="caption" color="text.secondary">
+                        {opt.label.split(' ')[0]}:
+                      </Typography>
+                      <Typography variant="body2">
+                        {m[opt.value] || '-'}
+                      </Typography>
+                    </Grid>
+                  ))}
+                </Grid>
+              </Box>
+            ))}
+          </Paper>
         </Grid>
       </Grid>
     </Box>

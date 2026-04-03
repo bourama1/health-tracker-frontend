@@ -200,7 +200,7 @@ function WeeklyVolumeSummary({ plan }) {
           // Scientific guideline: ~10-20 sets per week for hypertrophy
           const color = sets < 6 ? 'warning' : sets > 20 ? 'error' : 'success';
           return (
-            <Grid key={muscle} item xs={12} sm={6} md={4}>
+            <Grid key={muscle} size={{ xs: 12, sm: 6, md: 4 }}>
               <Box sx={{ mb: 1 }}>
                 <Box
                   sx={{

@@ -13,19 +13,9 @@ jest.mock('../api');
 const mockDates = [{ date: '2023-01-01' }, { date: '2023-01-15' }];
 const mockPhotos = {
   date: '2023-01-01',
-  front_path: 'https://lh3.googleusercontent.com/front',
-  side_path: 'https://lh3.googleusercontent.com/side',
-  back_path: 'https://lh3.googleusercontent.com/back',
-  front_google_id: 'g1',
-  side_google_id: 'g2',
-  back_google_id: 'g3',
-};
-
-const mockGooglePhotos = {
-  mediaItems: [
-    { id: 'g1', baseUrl: 'https://lh3.googleusercontent.com/g1' },
-    { id: 'g2', baseUrl: 'https://lh3.googleusercontent.com/g2' },
-  ],
+  front_path: 'https://res.cloudinary.com/demo/front',
+  side_path: 'https://res.cloudinary.com/demo/side',
+  back_path: 'https://res.cloudinary.com/demo/back',
 };
 
 describe('Photos Component', () => {
@@ -39,9 +29,6 @@ describe('Photos Component', () => {
       }
       if (url.startsWith('/api/photos/')) {
         return Promise.resolve({ data: mockPhotos });
-      }
-      if (url === '/api/photos/google-photos') {
-        return Promise.resolve({ data: mockGooglePhotos });
       }
       return Promise.reject(new Error('not found'));
     });
@@ -57,7 +44,7 @@ describe('Photos Component', () => {
       render(<Photos />);
     });
     expect(
-      screen.getByText(/Progress Photos \(Google Photos\)/i)
+      screen.getByText(/Progress Photos \(Cloudinary\)/i)
     ).toBeInTheDocument();
 
     const date1Select = screen.getByLabelText(/Date 1/i);
@@ -92,7 +79,7 @@ describe('Photos Component', () => {
     );
     expect(frontImage).toHaveAttribute(
       'src',
-      'https://lh3.googleusercontent.com/front'
+      'https://res.cloudinary.com/demo/front'
     );
   });
 
@@ -108,7 +95,7 @@ describe('Photos Component', () => {
       render(<Photos />);
     });
 
-    expect(screen.getByText(/Connect to Google Photos/i)).toBeInTheDocument();
+    expect(screen.getByText(/Sign in to Track Progress/i)).toBeInTheDocument();
     expect(
       screen.getByRole('button', { name: /Sign in with Google/i })
     ).toBeInTheDocument();

@@ -182,7 +182,7 @@ export default function App() {
               variant="caption"
               sx={{ mt: 3, display: 'block', color: 'text.disabled' }}
             >
-              We'll use your Google Photos for progress tracking.
+              Sign in to track your workouts, measurements, and progress photos.
             </Typography>
           </Paper>
         </Box>

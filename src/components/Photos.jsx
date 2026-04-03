@@ -212,7 +212,7 @@ export default function Photos() {
       </Typography>
       <Grid container spacing={2}>
         {['front', 'side', 'back'].map((side) => (
-          <Grid key={side} item xs={4}>
+          <Grid key={side} size={4}>
             <ImageBox
               path={photos1?.[`${side}_path`]}
               side={side}
@@ -227,7 +227,7 @@ export default function Photos() {
   const renderComparisonView = () => (
     <Box sx={{ mt: 1 }}>
       <Grid container spacing={2} sx={{ mb: 1 }}>
-        <Grid item xs={6}>
+        <Grid size={6}>
           <Typography
             variant="h6"
             align="center"
@@ -236,7 +236,7 @@ export default function Photos() {
             {selectedDate1}
           </Typography>
         </Grid>
-        <Grid item xs={6}>
+        <Grid size={6}>
           <Typography
             variant="h6"
             align="center"
@@ -249,14 +249,14 @@ export default function Photos() {
       <Divider sx={{ mb: 2 }} />
       {['front', 'side', 'back'].map((side) => (
         <Grid container spacing={3} key={side} sx={{ mb: 4 }}>
-          <Grid item xs={6}>
+          <Grid size={6}>
             <ImageBox
               path={photos1?.[`${side}_path`]}
               side={side}
               maxHeight={800}
             />
           </Grid>
-          <Grid item xs={6}>
+          <Grid size={6}>
             <ImageBox
               path={photos2?.[`${side}_path`]}
               side={side}
@@ -301,7 +301,7 @@ export default function Photos() {
 
       <Grid container spacing={3}>
         {/* Selection Section - 1/3 of the width */}
-        <Grid item xs={12} md={4}>
+        <Grid size={{ xs: 12, md: 4 }}>
           <Paper sx={{ p: 2 }}>
             <Typography variant="h6" gutterBottom>
               Upload New Photos
@@ -391,10 +391,10 @@ export default function Photos() {
         </Grid>
 
         {/* View & Compare Section - 2/3 of the width */}
-        <Grid item xs={12} md={8}>
+        <Grid size={{ xs: 12, md: 8 }}>
           <Paper sx={{ p: 2, minHeight: 400 }}>
             <Grid container spacing={2}>
-              <Grid item xs={6}>
+              <Grid size={6}>
                 <FormControl fullWidth>
                   <InputLabel id="date1-label">Date 1</InputLabel>
                   <Select
@@ -413,7 +413,7 @@ export default function Photos() {
                   </Select>
                 </FormControl>
               </Grid>
-              <Grid item xs={6}>
+              <Grid size={6}>
                 <FormControl fullWidth disabled={!selectedDate1}>
                   <InputLabel id="date2-label">Date 2 (Compare)</InputLabel>
                   <Select
