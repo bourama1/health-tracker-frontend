@@ -147,7 +147,7 @@ export default function Measurements() {
                 label="Date"
                 type="date"
                 name="date"
-              value={formData.date}
+                value={formData.date}
                 onChange={handleChange}
                 sx={{ mb: 2 }}
                 InputLabelProps={{ shrink: true }}

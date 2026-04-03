@@ -125,7 +125,7 @@ export default function Photos() {
   const handleSave = async (e) => {
     e.preventDefault();
     setIsUploading(true);
-    
+
     const formData = new FormData();
     formData.append('date', uploadDate);
     if (selectedFiles.front) formData.append('front', selectedFiles.front);
@@ -134,13 +134,13 @@ export default function Photos() {
 
     try {
       await axios.post('/api/photos', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
+        headers: { 'Content-Type': 'multipart/form-data' },
       });
       alert('Photos uploaded successfully to Cloudinary');
       fetchDates();
       if (uploadDate === selectedDate1) fetchPhotos(selectedDate1, setPhotos1);
       if (uploadDate === selectedDate2) fetchPhotos(selectedDate2, setPhotos2);
-      
+
       // Reset state
       setSelectedFiles({ front: null, side: null, back: null });
       setPreviews({ front: null, side: null, back: null });
@@ -283,7 +283,8 @@ export default function Photos() {
           Sign in to Track Progress
         </Typography>
         <Typography variant="body1" sx={{ mb: 3 }}>
-          Use your Google account to securely store and compare your progress photos.
+          Use your Google account to securely store and compare your progress
+          photos.
         </Typography>
         <Button variant="contained" color="primary" onClick={handleLogin}>
           Sign in with Google
@@ -375,11 +376,15 @@ export default function Photos() {
                 disabled={
                   isUploading ||
                   (!selectedFiles.front &&
-                   !selectedFiles.side &&
-                   !selectedFiles.back)
+                    !selectedFiles.side &&
+                    !selectedFiles.back)
                 }
               >
-                {isUploading ? <CircularProgress size={24} color="inherit" /> : 'Upload to Cloudinary'}
+                {isUploading ? (
+                  <CircularProgress size={24} color="inherit" />
+                ) : (
+                  'Upload to Cloudinary'
+                )}
               </Button>
             </form>
           </Paper>
