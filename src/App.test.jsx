@@ -41,5 +41,5 @@ test('navigates to different tabs', async () => {
   // Click on Sleep tab
   const sleepTab = screen.getByRole('button', { name: /Sleep/i });
   fireEvent.click(sleepTab);
-  expect(await screen.findByText(/Sleep Tracking/i)).toBeInTheDocument();
+  expect(await screen.findByText(/Sleep Analysis/i)).toBeInTheDocument();
 });

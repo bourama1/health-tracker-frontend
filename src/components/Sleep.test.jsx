@@ -17,9 +17,10 @@ const mockSleepHistory = [
     bedtime: '23:30',
     wake_time: '07:30',
     rhr: 58,
-    sleep_score: 82,
     deep_sleep_minutes: 85,
     rem_sleep_minutes: 110,
+    light_minutes: 240,
+    awake_minutes: 45,
   },
   {
     id: 2,
@@ -27,9 +28,10 @@ const mockSleepHistory = [
     bedtime: '23:00',
     wake_time: '07:00',
     rhr: 56,
-    sleep_score: 88,
     deep_sleep_minutes: 95,
     rem_sleep_minutes: 125,
+    light_minutes: 250,
+    awake_minutes: 30,
   },
 ];
 
@@ -51,12 +53,12 @@ describe('Sleep Component', () => {
     expect(screen.getByText('23:30')).toBeInTheDocument();
     expect(screen.getByText('07:30')).toBeInTheDocument();
     expect(screen.getByText('58')).toBeInTheDocument();
-    expect(screen.getByText('82')).toBeInTheDocument();
     expect(screen.getByText('1:25')).toBeInTheDocument();
     expect(screen.getByText('1:50')).toBeInTheDocument();
+    expect(screen.getByText('4:00')).toBeInTheDocument();
+    expect(screen.getByText('0:45')).toBeInTheDocument();
 
     expect(screen.getByText('2023-10-21')).toBeInTheDocument();
-    expect(screen.getByText('88')).toBeInTheDocument();
   });
 
   test('submits sleep form correctly', async () => {
@@ -79,14 +81,17 @@ describe('Sleep Component', () => {
     fireEvent.change(screen.getByLabelText(/RHR/i), {
       target: { value: '54' },
     });
-    fireEvent.change(screen.getByLabelText(/Sleep Score/i), {
-      target: { value: '92' },
+    fireEvent.change(screen.getByLabelText(/Deep \(h:mm\)/i), {
+      target: { value: '1:40' },
     });
-    fireEvent.change(screen.getByLabelText(/Deep Sleep/i), {
-      target: { value: '100' },
+    fireEvent.change(screen.getByLabelText(/REM \(h:mm\)/i), {
+      target: { value: '2:10' },
     });
-    fireEvent.change(screen.getByLabelText(/REM Sleep/i), {
-      target: { value: '130' },
+    fireEvent.change(screen.getByLabelText(/Light \(h:mm\)/i), {
+      target: { value: '4:30' },
+    });
+    fireEvent.change(screen.getByLabelText(/Awake \(h:mm\)/i), {
+      target: { value: '0:45' },
     });
 
     const saveButton = screen.getByRole('button', { name: /Save Entry/i });
@@ -102,9 +107,10 @@ describe('Sleep Component', () => {
           bedtime: '22:30',
           wake_time: '06:30',
           rhr: '54',
-          sleep_score: '92',
-          deep_sleep_minutes: '100',
-          rem_sleep_minutes: '130',
+          deep_sleep_minutes: 100,
+          rem_sleep_minutes: 130,
+          light_minutes: 270,
+          awake_minutes: 45,
         })
       );
     });

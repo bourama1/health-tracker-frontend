@@ -70,8 +70,8 @@ describe('Measurements Component', () => {
     });
 
     expect(await screen.findByText('2023-01-01')).toBeInTheDocument();
-    expect(screen.getByText('80')).toBeInTheDocument();
-    expect(screen.getByText('15%')).toBeInTheDocument();
+    expect(screen.getAllByText('80')).toHaveLength(1);
+    expect(screen.getAllByText('15')).toHaveLength(1);
     expect(screen.getByText('100')).toBeInTheDocument();
     expect(screen.getByText('85')).toBeInTheDocument();
     expect(screen.getByText('35')).toBeInTheDocument();
@@ -124,20 +124,24 @@ describe('Measurements Component', () => {
 
     expect(screen.getByTestId('line-chart')).toBeInTheDocument();
 
-    // Default measurement is Weight (kg)
-    expect(screen.getByTestId('line-element')).toHaveTextContent('Weight (kg)');
+    // Default measurement is Bodyweight (kg)
+    expect(screen.getByTestId('line-element')).toHaveTextContent(
+      'Bodyweight (kg)'
+    );
 
-    // Switch to Body Fat %
+    // Switch to Body Fat (%)
     const select = screen.getByRole('combobox', {
       name: /Select Measurement/i,
     });
     fireEvent.mouseDown(select);
 
-    const option = await screen.findByRole('option', { name: 'Body Fat %' });
+    const option = await screen.findByRole('option', { name: 'Body Fat (%)' });
     await act(async () => {
       fireEvent.click(option);
     });
 
-    expect(screen.getByTestId('line-element')).toHaveTextContent('Body Fat %');
+    expect(screen.getByTestId('line-element')).toHaveTextContent(
+      'Body Fat (%)'
+    );
   });
 });

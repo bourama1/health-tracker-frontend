@@ -278,7 +278,10 @@ export default function Sleep() {
   const handleGoogleFitSync = async () => {
     setSyncing(true);
     try {
-      const response = await axios.post(`/api/fit/sync-sleep?days=${syncDays}`);
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const response = await axios.post(
+        `/api/fit/sync-sleep?days=${syncDays}&tz=${encodeURIComponent(tz)}`
+      );
       showSnackbar(response.data.message, 'success');
       fetchHistory();
     } catch (err) {
