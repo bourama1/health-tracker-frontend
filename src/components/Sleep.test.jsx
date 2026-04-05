@@ -10,6 +10,22 @@ import api from '../api';
 
 jest.mock('../api');
 
+// Mock Recharts
+jest.mock('recharts', () => {
+  return {
+    ResponsiveContainer: ({ children }) => (
+      <div style={{ width: 800, height: 400 }}>{children}</div>
+    ),
+    LineChart: ({ children }) => <div data-testid="line-chart">{children}</div>,
+    Line: ({ name }) => <div data-testid="line-element">{name}</div>,
+    XAxis: () => <div />,
+    YAxis: () => <div />,
+    CartesianGrid: () => <div />,
+    Tooltip: () => <div />,
+    Legend: () => <div />,
+  };
+});
+
 const mockSleepHistory = [
   {
     id: 1,
@@ -37,7 +53,12 @@ const mockSleepHistory = [
 
 describe('Sleep Component', () => {
   beforeEach(() => {
-    api.get.mockResolvedValue({ data: mockSleepHistory });
+    api.get.mockImplementation((url) => {
+        if (url === '/api/sleep') return Promise.resolve({ data: mockSleepHistory });
+        return Promise.resolve({ data: [] });
+    });
+    api.post.mockResolvedValue({ data: { message: 'Success' } });
+    api.delete.mockResolvedValue({ data: { success: true } });
   });
 
   afterEach(() => {
@@ -45,9 +66,7 @@ describe('Sleep Component', () => {
   });
 
   test('renders sleep history table with data', async () => {
-    await act(async () => {
-      render(<Sleep />);
-    });
+    render(<Sleep />);
 
     expect(await screen.findByText('2023-10-20')).toBeInTheDocument();
     expect(screen.getByText('23:30')).toBeInTheDocument();
@@ -62,12 +81,8 @@ describe('Sleep Component', () => {
   });
 
   test('submits sleep form correctly', async () => {
-    api.post.mockResolvedValue({
-      data: { message: 'Sleep data saved successfully' },
-    });
-    await act(async () => {
-      render(<Sleep />);
-    });
+    render(<Sleep />);
+    await screen.findByText('2023-10-20');
 
     fireEvent.change(screen.getByLabelText(/Date/i), {
       target: { value: '2023-10-22' },
@@ -114,5 +129,54 @@ describe('Sleep Component', () => {
         })
       );
     });
+  });
+
+  test('deletes a sleep entry', async () => {
+    window.confirm = jest.fn(() => true);
+    render(<Sleep />);
+
+    const deleteBtns = await screen.findAllByTestId('DeleteIcon');
+    fireEvent.click(deleteBtns[0].parentElement);
+
+    expect(window.confirm).toHaveBeenCalledWith(
+      'Are you sure you want to delete this entry?'
+    );
+    await waitFor(() => {
+      expect(api.delete).toHaveBeenCalledWith('/api/sleep/2');
+    });
+  });
+
+  test('syncs with Google Fit', async () => {
+    render(<Sleep />);
+    await screen.findByText('Sleep Analysis');
+
+    const syncBtn = screen.getByText(/Sync Google Fit/i);
+    fireEvent.click(syncBtn);
+
+    expect(screen.getByText(/Syncing…/i)).toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(api.post).toHaveBeenCalled();
+    });
+    const syncCall = api.post.mock.calls.find(call => call[0].includes('/api/fit/sync-sleep'));
+    expect(syncCall).toBeDefined();
+    expect(await screen.findByText('Success')).toBeInTheDocument();
+  });
+
+  test('switches displayed statistic in trend chart', async () => {
+    render(<Sleep />);
+
+    expect(await screen.findByTestId('line-chart')).toBeInTheDocument();
+    expect(screen.getByTestId('line-element')).toHaveTextContent('RHR (bpm)');
+
+    const select = screen.getByLabelText(/Select Statistic/i);
+    fireEvent.mouseDown(select);
+
+    const option = await screen.findByRole('option', { name: 'Deep Sleep (mins)' });
+    await act(async () => {
+      fireEvent.click(option);
+    });
+
+    expect(screen.getByTestId('line-element')).toHaveTextContent('Deep Sleep (mins)');
   });
 });
