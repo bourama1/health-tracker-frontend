@@ -83,6 +83,52 @@ describe('Photos Component', () => {
     );
   });
 
+  test('comparing two dates fetches both sets of photos', async () => {
+    await act(async () => {
+      render(<Photos />);
+    });
+
+    const date1Select = screen.getByRole('combobox', { name: /Date 1/i });
+    fireEvent.mouseDown(date1Select);
+    fireEvent.click(await screen.findByRole('option', { name: '2023-01-01' }));
+
+    const date2Select = screen.getByRole('combobox', { name: /Date 2/i });
+    fireEvent.mouseDown(date2Select);
+    fireEvent.click(await screen.findByRole('option', { name: '2023-01-15' }));
+
+    expect(await screen.findByText('2023-01-01', { selector: 'h6' })).toBeInTheDocument();
+    expect(await screen.findByText('2023-01-15', { selector: 'h6' })).toBeInTheDocument();
+  });
+
+  test('handles photo selection and upload', async () => {
+    window.alert = jest.fn();
+    await act(async () => {
+      render(<Photos />);
+    });
+
+    expect(screen.getByText(/Upload New Photos/i)).toBeInTheDocument();
+
+    const file = new File(['hello'], 'hello.png', { type: 'image/png' });
+    // The inputs are hidden (style={{ display: 'none' }}) but we can find them via container
+    const inputs = document.querySelectorAll('input[type="file"]');
+
+    await act(async () => {
+        fireEvent.change(inputs[0], { target: { files: [file] } });
+    });
+
+    const uploadBtn = screen.getByRole('button', { name: /Upload to Cloudinary/i });
+    expect(uploadBtn).not.toBeDisabled();
+
+    await act(async () => {
+        fireEvent.click(uploadBtn);
+    });
+
+    await waitFor(() => {
+        expect(axios.post).toHaveBeenCalledWith('/api/photos', expect.any(FormData), expect.any(Object));
+    });
+    expect(window.alert).toHaveBeenCalledWith('Photos uploaded successfully to Cloudinary');
+  });
+
   test('shows login screen when not authenticated', async () => {
     axios.get.mockImplementation((url) => {
       if (url === '/api/auth/status') {

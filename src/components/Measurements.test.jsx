@@ -144,4 +144,25 @@ describe('Measurements Component', () => {
       'Body Fat (%)'
     );
   });
+
+  test('handles form submission error', async () => {
+    window.alert = jest.fn();
+    api.post.mockRejectedValue(new Error('Server Error'));
+    await act(async () => {
+      render(<Measurements />);
+    });
+
+    fireEvent.change(screen.getByLabelText(/Weight/i), {
+      target: { value: '82' },
+    });
+
+    const saveButton = screen.getByRole('button', { name: /Save Entry/i });
+    await act(async () => {
+      fireEvent.click(saveButton);
+    });
+
+    await waitFor(() => {
+      expect(window.alert).toHaveBeenCalledWith('Failed to save measurement');
+    });
+  });
 });
