@@ -3,7 +3,7 @@ import {
   screen,
   fireEvent,
   waitFor,
-  act,
+  within,
 } from '@testing-library/react';
 import Sleep from './Sleep';
 import api from '../api';
@@ -54,8 +54,9 @@ const mockSleepHistory = [
 describe('Sleep Component', () => {
   beforeEach(() => {
     api.get.mockImplementation((url) => {
-        if (url === '/api/sleep') return Promise.resolve({ data: mockSleepHistory });
-        return Promise.resolve({ data: [] });
+      if (url === '/api/sleep')
+        return Promise.resolve({ data: mockSleepHistory });
+      return Promise.resolve({ data: [] });
     });
     api.post.mockResolvedValue({ data: { message: 'Success' } });
     api.delete.mockResolvedValue({ data: { success: true } });
@@ -110,9 +111,7 @@ describe('Sleep Component', () => {
     });
 
     const saveButton = screen.getByRole('button', { name: /Save Entry/i });
-    await act(async () => {
-      fireEvent.click(saveButton);
-    });
+    fireEvent.click(saveButton);
 
     await waitFor(() => {
       expect(api.post).toHaveBeenCalledWith(
@@ -135,8 +134,14 @@ describe('Sleep Component', () => {
     window.confirm = jest.fn(() => true);
     render(<Sleep />);
 
-    const deleteBtns = await screen.findAllByTestId('DeleteIcon');
-    fireEvent.click(deleteBtns[0].parentElement);
+    // MUI IconButton renders as a <button>; find all error-coloured buttons in the table
+    // by querying within each TableRow. Since the component renders DeleteIcon inside the
+    // only <button> per row, the first button inside each row body cell is the delete action.
+    const tableRows = await screen.findAllByRole('row');
+    // Skip the header row (index 0); click the delete button in the first data row
+    const firstDataRow = tableRows[1];
+    const deleteBtn = within(firstDataRow).getByRole('button');
+    fireEvent.click(deleteBtn);
 
     expect(window.confirm).toHaveBeenCalledWith(
       'Are you sure you want to delete this entry?'
@@ -158,7 +163,9 @@ describe('Sleep Component', () => {
     await waitFor(() => {
       expect(api.post).toHaveBeenCalled();
     });
-    const syncCall = api.post.mock.calls.find(call => call[0].includes('/api/fit/sync-sleep'));
+    const syncCall = api.post.mock.calls.find((call) =>
+      call[0].includes('/api/fit/sync-sleep')
+    );
     expect(syncCall).toBeDefined();
     expect(await screen.findByText('Success')).toBeInTheDocument();
   });
@@ -172,11 +179,13 @@ describe('Sleep Component', () => {
     const select = screen.getByLabelText(/Select Statistic/i);
     fireEvent.mouseDown(select);
 
-    const option = await screen.findByRole('option', { name: 'Deep Sleep (mins)' });
-    await act(async () => {
-      fireEvent.click(option);
+    const option = await screen.findByRole('option', {
+      name: 'Deep Sleep (mins)',
     });
+    fireEvent.click(option);
 
-    expect(screen.getByTestId('line-element')).toHaveTextContent('Deep Sleep (mins)');
+    expect(screen.getByTestId('line-element')).toHaveTextContent(
+      'Deep Sleep (mins)'
+    );
   });
 });

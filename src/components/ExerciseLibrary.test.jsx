@@ -61,9 +61,7 @@ describe('ExerciseLibrary Component', () => {
   });
 
   test('renders search and filters, and fetches data', async () => {
-    await act(async () => {
-      render(<ExerciseLibrary />);
-    });
+    render(<ExerciseLibrary />);
 
     expect(
       screen.getByPlaceholderText(/Search exercises, muscles…/i)
@@ -78,9 +76,7 @@ describe('ExerciseLibrary Component', () => {
   });
 
   test('search functionality with debounce', async () => {
-    await act(async () => {
-      render(<ExerciseLibrary />);
-    });
+    render(<ExerciseLibrary />);
 
     const searchInput = screen.getByPlaceholderText(
       /Search exercises, muscles…/i
@@ -88,25 +84,29 @@ describe('ExerciseLibrary Component', () => {
     fireEvent.change(searchInput, { target: { value: 'Bench' } });
 
     // Should not have called API immediately
-    expect(axios.get).not.toHaveBeenCalledWith('/api/workouts/exercises', expect.objectContaining({
-      params: expect.objectContaining({ search: 'Bench' }),
-    }));
+    expect(axios.get).not.toHaveBeenCalledWith(
+      '/api/workouts/exercises',
+      expect.objectContaining({
+        params: expect.objectContaining({ search: 'Bench' }),
+      })
+    );
 
     act(() => {
       jest.advanceTimersByTime(300);
     });
 
     await waitFor(() => {
-      expect(axios.get).toHaveBeenCalledWith('/api/workouts/exercises', expect.objectContaining({
-        params: expect.objectContaining({ search: 'Bench' }),
-      }));
+      expect(axios.get).toHaveBeenCalledWith(
+        '/api/workouts/exercises',
+        expect.objectContaining({
+          params: expect.objectContaining({ search: 'Bench' }),
+        })
+      );
     });
   });
 
   test('quick muscle filter chips', async () => {
-    await act(async () => {
-      render(<ExerciseLibrary />);
-    });
+    render(<ExerciseLibrary />);
 
     const chestChip = await screen.findByRole('button', { name: 'Chest' });
     fireEvent.click(chestChip);
@@ -116,16 +116,17 @@ describe('ExerciseLibrary Component', () => {
     });
 
     await waitFor(() => {
-      expect(axios.get).toHaveBeenCalledWith('/api/workouts/exercises', expect.objectContaining({
-        params: expect.objectContaining({ muscle: 'Chest' }),
-      }));
+      expect(axios.get).toHaveBeenCalledWith(
+        '/api/workouts/exercises',
+        expect.objectContaining({
+          params: expect.objectContaining({ muscle: 'Chest' }),
+        })
+      );
     });
   });
 
   test('pagination functionality', async () => {
-    await act(async () => {
-      render(<ExerciseLibrary />);
-    });
+    render(<ExerciseLibrary />);
 
     await screen.findByText('Exercise 1');
 
@@ -140,9 +141,7 @@ describe('ExerciseLibrary Component', () => {
   });
 
   test('opening ExerciseDetail dialog', async () => {
-    await act(async () => {
-      render(<ExerciseLibrary />);
-    });
+    render(<ExerciseLibrary />);
 
     const exerciseCard = await screen.findByText('Exercise 1');
     fireEvent.click(exerciseCard);
@@ -153,7 +152,7 @@ describe('ExerciseLibrary Component', () => {
 
     expect(await screen.findByText('Instructions')).toBeInTheDocument();
 
-    const closeBtn = screen.getByTestId('CloseIcon').parentElement;
+    const closeBtn = screen.getByRole('button', { name: /close/i });
     fireEvent.click(closeBtn);
 
     await waitFor(() => {

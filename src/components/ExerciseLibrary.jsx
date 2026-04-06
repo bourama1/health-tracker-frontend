@@ -114,6 +114,7 @@ function ExerciseDetail({ exerciseId, open, onClose, onAddToDay }) {
             <IconButton
               onClick={onClose}
               sx={{ position: 'absolute', right: 8, top: 8 }}
+              aria-label="close"
             >
               <CloseIcon />
             </IconButton>

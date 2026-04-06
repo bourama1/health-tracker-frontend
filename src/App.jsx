@@ -25,6 +25,7 @@ import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 import StraightenIcon from '@mui/icons-material/Straighten';
 import PhotoCameraIcon from '@mui/icons-material/PhotoCamera';
 import BedtimeIcon from '@mui/icons-material/Bedtime';
+import DashboardIcon from '@mui/icons-material/Dashboard';
 import Brightness4Icon from '@mui/icons-material/Brightness4';
 import Brightness7Icon from '@mui/icons-material/Brightness7';
 import GoogleIcon from '@mui/icons-material/Google';
@@ -32,12 +33,13 @@ import Measurements from './components/Measurements';
 import Photos from './components/Photos';
 import Sleep from './components/Sleep';
 import Workouts from './components/Workouts';
+import Dashboard from './components/Dashboard';
 
 const drawerWidth = 240;
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState('Workouts');
+  const [activeTab, setActiveTab] = useState('Dashboard');
   const [mode, setMode] = useState('dark');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
@@ -95,6 +97,8 @@ export default function App() {
 
   const renderContent = () => {
     switch (activeTab) {
+      case 'Dashboard':
+        return <Dashboard onNavigate={setActiveTab} />;
       case 'Workouts':
         return <Workouts />;
       case 'Measurements':
@@ -109,6 +113,7 @@ export default function App() {
   };
 
   const menuItems = [
+    { text: 'Dashboard', icon: <DashboardIcon /> },
     { text: 'Workouts', icon: <FitnessCenterIcon /> },
     { text: 'Measurements', icon: <StraightenIcon /> },
     { text: 'Photos', icon: <PhotoCameraIcon /> },

@@ -1,10 +1,4 @@
-import {
-  render,
-  screen,
-  fireEvent,
-  waitFor,
-  act,
-} from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import Workouts from './Workouts';
 import api from '../api';
 
@@ -13,15 +7,19 @@ jest.mock('../api');
 // Mock ExerciseLibrary to decouple Workouts tests from ExerciseLibrary internals
 jest.mock('./ExerciseLibrary', () => ({ onAddExercise, showAdd }) => (
   <div data-testid="mock-exercise-library">
-    <button onClick={() => onAddExercise?.({ id: 'ex1', name: 'Exercise 1', primary_muscles: 'chest' })}>
+    <button
+      onClick={() =>
+        onAddExercise?.({
+          id: 'ex1',
+          name: 'Exercise 1',
+          primary_muscles: 'chest',
+        })
+      }
+    >
       Add Exercise 1
     </button>
   </div>
 ));
-
-const mockExercises = [
-  { id: 'ex1', name: 'Exercise 1', primary_muscles: 'chest' },
-];
 
 const mockPlans = [
   {
@@ -32,7 +30,14 @@ const mockPlans = [
         id: 10,
         name: 'Day 1',
         exercises: [
-          { exercise_id: 'ex1', name: 'Exercise 1', sets: 3, reps: 10, primary_muscles: 'chest', exercise_type: 'weighted' },
+          {
+            exercise_id: 'ex1',
+            name: 'Exercise 1',
+            sets: 3,
+            reps: 10,
+            primary_muscles: 'chest',
+            exercise_type: 'weighted',
+          },
         ],
       },
     ],
@@ -47,7 +52,15 @@ describe('Workouts Component', () => {
       if (url === '/api/workouts/sessions')
         return Promise.resolve({ data: [] });
       if (url === '/api/workouts/stats')
-        return Promise.resolve({ data: { totalSessions: 0, totalSets: 0, totalPRs: 0, recentPRs: [], muscleVolume: [] } });
+        return Promise.resolve({
+          data: {
+            totalSessions: 0,
+            totalSets: 0,
+            totalPRs: 0,
+            recentPRs: [],
+            muscleVolume: [],
+          },
+        });
       if (url.includes('/last-for-day/'))
         return Promise.resolve({ data: null });
       if (url.includes('/exercises/suggestion/'))
@@ -63,17 +76,13 @@ describe('Workouts Component', () => {
   });
 
   test('renders workout plans', async () => {
-    await act(async () => {
-      render(<Workouts />);
-    });
+    render(<Workouts />);
     expect(screen.getByText(/Workout Tracking/i)).toBeInTheDocument();
     expect(await screen.findByText('Test Plan')).toBeInTheDocument();
   });
 
   test('creates a new plan using PlanBuilder', async () => {
-    await act(async () => {
-      render(<Workouts />);
-    });
+    render(<Workouts />);
 
     fireEvent.click(screen.getByText(/Create New Plan/i));
 
@@ -82,29 +91,26 @@ describe('Workouts Component', () => {
     });
 
     fireEvent.click(screen.getByText(/Browse Exercise Library/i));
-    await act(async () => {
-        fireEvent.click(screen.getByText('Add Exercise 1'));
-    });
+    fireEvent.click(screen.getByText('Add Exercise 1'));
     fireEvent.click(screen.getByText(/Back to Plan/i));
 
     expect(screen.getByText('Exercise 1')).toBeInTheDocument();
 
     const saveBtn = screen.getByText(/Save Plan/i);
-    await act(async () => {
-      fireEvent.click(saveBtn);
-    });
+    fireEvent.click(saveBtn);
 
     await waitFor(() => {
-      expect(api.post).toHaveBeenCalledWith('/api/workouts/plans', expect.objectContaining({
-        name: 'New Strength Plan'
-      }));
+      expect(api.post).toHaveBeenCalledWith(
+        '/api/workouts/plans',
+        expect.objectContaining({
+          name: 'New Strength Plan',
+        })
+      );
     });
   });
 
   test('logs a session using ActiveWorkout', async () => {
-    await act(async () => {
-      render(<Workouts />);
-    });
+    render(<Workouts />);
 
     fireEvent.click(screen.getByText('Test Plan'));
     fireEvent.click(await screen.findByText('Day 1'));
@@ -117,17 +123,18 @@ describe('Workouts Component', () => {
     fireEvent.change(inputs[1], { target: { value: '12' } }); // reps
 
     const finishBtn = screen.getByText(/Finish & Save/i);
-    await act(async () => {
-      fireEvent.click(finishBtn);
-    });
+    fireEvent.click(finishBtn);
 
     await waitFor(() => {
-      expect(api.post).toHaveBeenCalledWith('/api/workouts/sessions', expect.objectContaining({
-        day_id: 10,
-        logs: expect.arrayContaining([
-          expect.objectContaining({ weight: 60, reps: 12 })
-        ])
-      }));
+      expect(api.post).toHaveBeenCalledWith(
+        '/api/workouts/sessions',
+        expect.objectContaining({
+          day_id: 10,
+          logs: expect.arrayContaining([
+            expect.objectContaining({ weight: 60, reps: 12 }),
+          ]),
+        })
+      );
     });
   });
 
@@ -136,17 +143,18 @@ describe('Workouts Component', () => {
       totalSessions: 10,
       totalSets: 100,
       totalPRs: 5,
-      recentPRs: [{ name: 'Bench Press', weight: 100, reps: 5, date: '2023-01-01' }],
+      recentPRs: [
+        { name: 'Bench Press', weight: 100, reps: 5, date: '2023-01-01' },
+      ],
       muscleVolume: [{ muscle: 'chest', volume: 5000 }],
     };
     api.get.mockImplementation((url) => {
-      if (url === '/api/workouts/stats') return Promise.resolve({ data: mockStats });
+      if (url === '/api/workouts/stats')
+        return Promise.resolve({ data: mockStats });
       return Promise.resolve({ data: [] });
     });
 
-    await act(async () => {
-      render(<Workouts />);
-    });
+    render(<Workouts />);
 
     fireEvent.click(screen.getByText('Stats'));
 
@@ -162,17 +170,24 @@ describe('Workouts Component', () => {
         date: '2023-10-25',
         day_name: 'Chest Day',
         plan_name: 'Bulk Plan',
-        logs: [{ exercise_id: 'ex1', exercise_name: 'Bench Press', weight: 80, reps: 10, is_pr: true }],
+        logs: [
+          {
+            exercise_id: 'ex1',
+            exercise_name: 'Bench Press',
+            weight: 80,
+            reps: 10,
+            is_pr: true,
+          },
+        ],
       },
     ];
     api.get.mockImplementation((url) => {
-      if (url === '/api/workouts/sessions?limit=30') return Promise.resolve({ data: mockHistory });
+      if (url === '/api/workouts/sessions?limit=30')
+        return Promise.resolve({ data: mockHistory });
       return Promise.resolve({ data: [] });
     });
 
-    await act(async () => {
-      render(<Workouts />);
-    });
+    render(<Workouts />);
 
     fireEvent.click(screen.getByText('History'));
 
@@ -181,16 +196,12 @@ describe('Workouts Component', () => {
   });
 
   test('WeeklyVolumeSummary calculates set counts correctly', async () => {
-    await act(async () => {
-      render(<Workouts />);
-    });
+    render(<Workouts />);
 
     fireEvent.click(screen.getByText(/Create New Plan/i));
 
     fireEvent.click(screen.getByText(/Browse Exercise Library/i));
-    await act(async () => {
-        fireEvent.click(screen.getByText('Add Exercise 1'));
-    });
+    fireEvent.click(screen.getByText('Add Exercise 1'));
     fireEvent.click(screen.getByText(/Back to Plan/i));
 
     expect(await screen.findByText('3 sets')).toBeInTheDocument();

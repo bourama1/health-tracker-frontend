@@ -355,6 +355,7 @@ export default function Photos() {
                       style={{ display: 'none' }}
                       ref={fileInputRefs[side]}
                       onChange={(e) => handleFileChange(side, e)}
+                      data-testid={`${side}-file-input`}
                     />
                     <Button
                       variant="outlined"

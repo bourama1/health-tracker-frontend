@@ -1,10 +1,4 @@
-import {
-  render,
-  screen,
-  fireEvent,
-  waitFor,
-  act,
-} from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import Photos from './Photos';
 import axios from '../api';
 
@@ -40,9 +34,7 @@ describe('Photos Component', () => {
   });
 
   test('renders correctly and fetches dates when authenticated', async () => {
-    await act(async () => {
-      render(<Photos />);
-    });
+    render(<Photos />);
     expect(
       screen.getByText(/Progress Photos \(Cloudinary\)/i)
     ).toBeInTheDocument();
@@ -55,17 +47,13 @@ describe('Photos Component', () => {
   });
 
   test('selecting a date fetches and displays photos', async () => {
-    await act(async () => {
-      render(<Photos />);
-    });
+    render(<Photos />);
 
     const date1Select = screen.getByRole('combobox', { name: /Date 1/i });
     fireEvent.mouseDown(date1Select);
 
     const option1 = await screen.findByRole('option', { name: '2023-01-01' });
-    await act(async () => {
-      fireEvent.click(option1);
-    });
+    fireEvent.click(option1);
 
     expect(
       await screen.findByText('2023-01-01', { selector: 'h6' })
@@ -84,9 +72,7 @@ describe('Photos Component', () => {
   });
 
   test('comparing two dates fetches both sets of photos', async () => {
-    await act(async () => {
-      render(<Photos />);
-    });
+    render(<Photos />);
 
     const date1Select = screen.getByRole('combobox', { name: /Date 1/i });
     fireEvent.mouseDown(date1Select);
@@ -96,37 +82,42 @@ describe('Photos Component', () => {
     fireEvent.mouseDown(date2Select);
     fireEvent.click(await screen.findByRole('option', { name: '2023-01-15' }));
 
-    expect(await screen.findByText('2023-01-01', { selector: 'h6' })).toBeInTheDocument();
-    expect(await screen.findByText('2023-01-15', { selector: 'h6' })).toBeInTheDocument();
+    expect(
+      await screen.findByText('2023-01-01', { selector: 'h6' })
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByText('2023-01-15', { selector: 'h6' })
+    ).toBeInTheDocument();
   });
 
   test('handles photo selection and upload', async () => {
     window.alert = jest.fn();
-    await act(async () => {
-      render(<Photos />);
-    });
+    render(<Photos />);
 
     expect(screen.getByText(/Upload New Photos/i)).toBeInTheDocument();
 
     const file = new File(['hello'], 'hello.png', { type: 'image/png' });
-    // The inputs are hidden (style={{ display: 'none' }}) but we can find them via container
-    const inputs = document.querySelectorAll('input[type="file"]');
+    // The inputs are hidden (display:none) — the component exposes data-testid for each
+    const frontInput = screen.getByTestId('front-file-input');
+    fireEvent.change(frontInput, { target: { files: [file] } });
 
-    await act(async () => {
-        fireEvent.change(inputs[0], { target: { files: [file] } });
+    const uploadBtn = screen.getByRole('button', {
+      name: /Upload to Cloudinary/i,
     });
-
-    const uploadBtn = screen.getByRole('button', { name: /Upload to Cloudinary/i });
     expect(uploadBtn).not.toBeDisabled();
 
-    await act(async () => {
-        fireEvent.click(uploadBtn);
-    });
+    fireEvent.click(uploadBtn);
 
     await waitFor(() => {
-        expect(axios.post).toHaveBeenCalledWith('/api/photos', expect.any(FormData), expect.any(Object));
+      expect(axios.post).toHaveBeenCalledWith(
+        '/api/photos',
+        expect.any(FormData),
+        expect.any(Object)
+      );
     });
-    expect(window.alert).toHaveBeenCalledWith('Photos uploaded successfully to Cloudinary');
+    expect(window.alert).toHaveBeenCalledWith(
+      'Photos uploaded successfully to Cloudinary'
+    );
   });
 
   test('shows login screen when not authenticated', async () => {
@@ -137,11 +128,11 @@ describe('Photos Component', () => {
       return Promise.reject(new Error('not found'));
     });
 
-    await act(async () => {
-      render(<Photos />);
-    });
+    render(<Photos />);
 
-    expect(screen.getByText(/Sign in to Track Progress/i)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/Sign in to Track Progress/i)
+    ).toBeInTheDocument();
     expect(
       screen.getByRole('button', { name: /Sign in with Google/i })
     ).toBeInTheDocument();
