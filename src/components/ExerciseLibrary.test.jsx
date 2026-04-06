@@ -4,6 +4,7 @@ import {
   fireEvent,
   waitFor,
   act,
+  within,
 } from '@testing-library/react';
 import ExerciseLibrary from './ExerciseLibrary';
 import axios from '../api';
@@ -152,7 +153,10 @@ describe('ExerciseLibrary Component', () => {
 
     expect(await screen.findByText('Instructions')).toBeInTheDocument();
 
-    const closeBtn = screen.getByRole('button', { name: /close/i });
+    // Two "close" buttons exist: an icon button (aria-label="close") and a text "Close" button.
+    // Use the icon button specifically to avoid ambiguity.
+    const dialog = screen.getByRole('dialog');
+    const closeBtn = within(dialog).getByRole('button', { name: 'close' });
     fireEvent.click(closeBtn);
 
     await waitFor(() => {

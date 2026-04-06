@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import App from './App';
 import api from './api';
 
@@ -25,8 +25,10 @@ test('navigates to different tabs', async () => {
   });
   render(<App />);
 
-  // Default tab is Workouts
-  expect(await screen.findByText(/Workout Tracking/i)).toBeInTheDocument();
+  // Default tab is Dashboard
+  expect(
+    await screen.findByRole('button', { name: /Dashboard/i })
+  ).toBeInTheDocument();
 
   // Click on Measurements tab
   const measurementsTab = screen.getByRole('button', { name: /Measurements/i });

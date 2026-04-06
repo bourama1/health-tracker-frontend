@@ -35,8 +35,10 @@ describe('Photos Component', () => {
 
   test('renders correctly and fetches dates when authenticated', async () => {
     render(<Photos />);
+
+    // Wait for auth check to complete before asserting on main UI
     expect(
-      screen.getByText(/Progress Photos \(Cloudinary\)/i)
+      await screen.findByText(/Progress Photos \(Cloudinary\)/i)
     ).toBeInTheDocument();
 
     const date1Select = screen.getByLabelText(/Date 1/i);
@@ -49,7 +51,10 @@ describe('Photos Component', () => {
   test('selecting a date fetches and displays photos', async () => {
     render(<Photos />);
 
-    const date1Select = screen.getByRole('combobox', { name: /Date 1/i });
+    // Wait for auth check to complete before interacting
+    const date1Select = await screen.findByRole('combobox', {
+      name: /Date 1/i,
+    });
     fireEvent.mouseDown(date1Select);
 
     const option1 = await screen.findByRole('option', { name: '2023-01-01' });
@@ -74,7 +79,10 @@ describe('Photos Component', () => {
   test('comparing two dates fetches both sets of photos', async () => {
     render(<Photos />);
 
-    const date1Select = screen.getByRole('combobox', { name: /Date 1/i });
+    // Wait for auth check to complete before interacting
+    const date1Select = await screen.findByRole('combobox', {
+      name: /Date 1/i,
+    });
     fireEvent.mouseDown(date1Select);
     fireEvent.click(await screen.findByRole('option', { name: '2023-01-01' }));
 
@@ -94,7 +102,8 @@ describe('Photos Component', () => {
     window.alert = jest.fn();
     render(<Photos />);
 
-    expect(screen.getByText(/Upload New Photos/i)).toBeInTheDocument();
+    // Wait for auth check to complete before interacting
+    expect(await screen.findByText(/Upload New Photos/i)).toBeInTheDocument();
 
     const file = new File(['hello'], 'hello.png', { type: 'image/png' });
     // The inputs are hidden (display:none) — the component exposes data-testid for each

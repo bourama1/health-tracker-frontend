@@ -112,7 +112,8 @@ describe('Workouts Component', () => {
   test('logs a session using ActiveWorkout', async () => {
     render(<Workouts />);
 
-    fireEvent.click(screen.getByText('Test Plan'));
+    // Wait for plans to load before clicking
+    fireEvent.click(await screen.findByText('Test Plan'));
     fireEvent.click(await screen.findByText('Day 1'));
 
     expect(await screen.findByText(/Day 1 — /i)).toBeInTheDocument();
