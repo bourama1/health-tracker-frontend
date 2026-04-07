@@ -31,11 +31,22 @@ import {
 import TimerIcon from '@mui/icons-material/Timer';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import DeleteIcon from '@mui/icons-material/Delete';
+import EditIcon from '@mui/icons-material/Edit';
 import AddIcon from '@mui/icons-material/Add';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import axios from '../api';
 import ExerciseLibrary from './ExerciseLibrary';
+
+const DAYS_OF_WEEK = [
+  'Monday',
+  'Tuesday',
+  'Wednesday',
+  'Thursday',
+  'Friday',
+  'Saturday',
+  'Sunday',
+];
 
 // ─── Rest Timer ──────────────────────────────────────────────────────────────
 
@@ -173,8 +184,9 @@ function WeeklyVolumeSummary({ plan }) {
   const muscleSets = {};
 
   plan.days.forEach((day) => {
+    const frequency = Math.max(1, day.scheduled_days?.length || 0);
     day.exercises.forEach((ex) => {
-      const sets = parseInt(ex.sets) || 0;
+      const sets = (parseInt(ex.sets) || 0) * frequency;
       const primaryMuscles = (ex.primary_muscles || '')
         .split(',')
         .map((m) => m.trim().toLowerCase())
@@ -241,24 +253,122 @@ function WeeklyVolumeSummary({ plan }) {
   );
 }
 
+// ─── Muscle Readiness ─────────────────────────────────────────────────────────
+
+function MuscleReadiness({ day, lastTrainedMuscles }) {
+  if (!lastTrainedMuscles) return null;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const muscles = new Set();
+  day.exercises.forEach((ex) => {
+    (ex.primary_muscles || '').split(',').forEach((m) => {
+      const t = m.trim().toLowerCase();
+      if (t) muscles.add(t);
+    });
+  });
+
+  const muscleStatus = Array.from(muscles).map((m) => {
+    const lastDateStr = lastTrainedMuscles[m];
+    if (!lastDateStr) return { muscle: m, status: 'ready', days: Infinity };
+
+    const lastDate = new Date(lastDateStr);
+    lastDate.setHours(0, 0, 0, 0);
+    const diffDays = Math.floor((today - lastDate) / (1000 * 60 * 60 * 24));
+
+    if (diffDays >= 2) return { muscle: m, status: 'ready', days: diffDays };
+    if (diffDays >= 1)
+      return { muscle: m, status: 'recovering', days: diffDays };
+    return { muscle: m, status: 'needs_rest', days: diffDays };
+  });
+
+  if (muscleStatus.length === 0) return null;
+
+  const overallStatus = muscleStatus.reduce((acc, curr) => {
+    if (curr.status === 'needs_rest') return 'needs_rest';
+    if (curr.status === 'recovering' && acc !== 'needs_rest')
+      return 'recovering';
+    return acc;
+  }, 'ready');
+
+  const statusColors = {
+    ready: 'success',
+    recovering: 'warning',
+    needs_rest: 'error',
+  };
+
+  const statusLabels = {
+    ready: 'Ready',
+    recovering: 'Recovering (1 day rest)',
+    needs_rest: 'Needs Rest (0 days rest)',
+  };
+
+  return (
+    <Box sx={{ mt: 1 }}>
+      <Tooltip
+        title={
+          <Box sx={{ p: 0.5 }}>
+            {muscleStatus.map((m) => (
+              <Typography key={m.muscle} variant="caption" display="block">
+                {m.muscle.charAt(0).toUpperCase() + m.muscle.slice(1)}:{' '}
+                {m.status.replace('_', ' ')} (
+                {m.days === Infinity ? 'never' : m.days + ' days ago'})
+              </Typography>
+            ))}
+          </Box>
+        }
+      >
+        <Chip
+          label={statusLabels[overallStatus]}
+          color={statusColors[overallStatus]}
+          size="small"
+          variant="outlined"
+        />
+      </Tooltip>
+    </Box>
+  );
+}
+
 // ─── Plan Builder ─────────────────────────────────────────────────────────────
 
-function PlanBuilder({ onSaved, onCancel }) {
-  const [plan, setPlan] = useState({
-    name: '',
-    description: '',
-    days: [{ name: 'Day 1', exercises: [] }],
-  });
+function PlanBuilder({ onSaved, onCancel, planToEdit }) {
+  const [plan, setPlan] = useState(
+    planToEdit || {
+      name: '',
+      description: '',
+      days: [{ name: 'Day 1', exercises: [], scheduled_days: [] }],
+    }
+  );
   const [pickingForDay, setPickingForDay] = useState(null); // day index while library picker is open
 
   const addDay = () =>
     setPlan((p) => ({
       ...p,
-      days: [...p.days, { name: `Day ${p.days.length + 1}`, exercises: [] }],
+      days: [
+        ...p.days,
+        { name: `Day ${p.days.length + 1}`, exercises: [], scheduled_days: [] },
+      ],
     }));
 
   const removeDay = (dIdx) =>
     setPlan((p) => ({ ...p, days: p.days.filter((_, i) => i !== dIdx) }));
+
+  const toggleScheduledDay = (dIdx, dayName) => {
+    setPlan((p) => ({
+      ...p,
+      days: p.days.map((d, i) =>
+        i !== dIdx
+          ? d
+          : {
+              ...d,
+              scheduled_days: d.scheduled_days.includes(dayName)
+                ? d.scheduled_days.filter((name) => name !== dayName)
+                : [...d.scheduled_days, dayName],
+            }
+      ),
+    }));
+  };
 
   const addExerciseToDay = (dIdx, ex) =>
     setPlan((p) => ({
@@ -315,10 +425,14 @@ function PlanBuilder({ onSaved, onCancel }) {
   const handleSave = async () => {
     if (!plan.name) return alert('Plan name is required');
     try {
-      await axios.post('/api/workouts/plans', plan);
+      if (plan.id) {
+        await axios.put(`/api/workouts/plans/${plan.id}`, plan);
+      } else {
+        await axios.post('/api/workouts/plans', plan);
+      }
       onSaved();
     } catch {
-      alert('Failed to create plan');
+      alert(`Failed to ${plan.id ? 'update' : 'create'} plan`);
     }
   };
 
@@ -346,7 +460,7 @@ function PlanBuilder({ onSaved, onCancel }) {
   return (
     <Paper sx={{ p: 3 }}>
       <Typography variant="h6" gutterBottom>
-        Create New Workout Plan
+        {plan.id ? 'Edit Workout Plan' : 'Create New Workout Plan'}
       </Typography>
       <TextField
         fullWidth
@@ -378,7 +492,7 @@ function PlanBuilder({ onSaved, onCancel }) {
             borderRadius: 2,
           }}
         >
-          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, gap: 1 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', mb: 1, gap: 1 }}>
             <TextField
               label={`Day ${dIdx + 1} Name`}
               size="small"
@@ -398,6 +512,34 @@ function PlanBuilder({ onSaved, onCancel }) {
                 <DeleteIcon fontSize="small" />
               </IconButton>
             )}
+          </Box>
+
+          <Box sx={{ mb: 2 }}>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              display="block"
+              sx={{ mb: 0.5 }}
+            >
+              Scheduled Days:
+            </Typography>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+              {DAYS_OF_WEEK.map((dw) => (
+                <Chip
+                  key={dw}
+                  label={dw.slice(0, 3)}
+                  size="small"
+                  onClick={() => toggleScheduledDay(dIdx, dw)}
+                  color={
+                    day.scheduled_days.includes(dw) ? 'primary' : 'default'
+                  }
+                  variant={
+                    day.scheduled_days.includes(dw) ? 'filled' : 'outlined'
+                  }
+                  sx={{ cursor: 'pointer' }}
+                />
+              ))}
+            </Box>
           </Box>
 
           {day.exercises.length === 0 && (
@@ -1182,12 +1324,30 @@ function HistoryPanel() {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-export default function Workouts() {
+export default function Workouts({
+  activeDay: propActiveDay,
+  onActiveDayChange,
+}) {
   const [tab, setTab] = useState(0);
   const [plans, setPlans] = useState([]);
   const [selectedPlan, setSelectedPlan] = useState(null);
-  const [activeDay, setActiveDay] = useState(null);
-  const [isCreatingPlan, setIsCreatingPlan] = useState(false);
+  const [activeDay, setActiveDay] = useState(propActiveDay || null);
+  const [planToEdit, setPlanToEdit] = useState(null);
+  const [lastTrainedMuscles, setLastTrainedMuscles] = useState(null);
+
+  // Sync prop with state
+  useEffect(() => {
+    if (propActiveDay) {
+      setActiveDay(propActiveDay);
+    }
+  }, [propActiveDay]);
+
+  const handleActiveDayChange = (day) => {
+    setActiveDay(day);
+    if (!day && onActiveDayChange) {
+      onActiveDayChange(null);
+    }
+  };
 
   const fetchPlans = useCallback(async () => {
     const r = await axios
@@ -1196,9 +1356,17 @@ export default function Workouts() {
     setPlans(r.data);
   }, []);
 
+  const fetchTrainedMuscles = useCallback(async () => {
+    const r = await axios
+      .get('/api/workouts/last-trained-muscles')
+      .catch(() => ({ data: {} }));
+    setLastTrainedMuscles(r.data);
+  }, []);
+
   useEffect(() => {
     fetchPlans();
-  }, [fetchPlans]);
+    fetchTrainedMuscles();
+  }, [fetchPlans, fetchTrainedMuscles]);
 
   const handleDeletePlan = async (planId) => {
     if (!window.confirm('Delete this plan?')) return;
@@ -1212,22 +1380,23 @@ export default function Workouts() {
       <ActiveWorkout
         day={activeDay}
         onSaved={() => {
-          setActiveDay(null);
+          handleActiveDayChange(null);
           setTab(1);
         }}
-        onCancel={() => setActiveDay(null)}
+        onCancel={() => handleActiveDayChange(null)}
       />
     );
   }
 
-  if (isCreatingPlan) {
+  if (planToEdit !== null) {
     return (
       <PlanBuilder
+        planToEdit={planToEdit === true ? null : planToEdit}
         onSaved={() => {
           fetchPlans();
-          setIsCreatingPlan(false);
+          setPlanToEdit(null);
         }}
-        onCancel={() => setIsCreatingPlan(false)}
+        onCancel={() => setPlanToEdit(null)}
       />
     );
   }
@@ -1246,7 +1415,7 @@ export default function Workouts() {
         <Button
           variant="contained"
           color="secondary"
-          onClick={() => setIsCreatingPlan(true)}
+          onClick={() => setPlanToEdit(true)}
         >
           Create New Plan
         </Button>
@@ -1310,16 +1479,27 @@ export default function Workouts() {
                         {plan.days?.length ?? 0} days
                       </Typography>
                     </Box>
-                    <IconButton
-                      size="small"
-                      color="error"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeletePlan(plan.id);
-                      }}
-                    >
-                      <DeleteIcon fontSize="small" />
-                    </IconButton>
+                    <Box sx={{ display: 'flex', gap: 0.5 }}>
+                      <IconButton
+                        size="small"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setPlanToEdit(plan);
+                        }}
+                      >
+                        <EditIcon fontSize="small" />
+                      </IconButton>
+                      <IconButton
+                        size="small"
+                        color="error"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeletePlan(plan.id);
+                        }}
+                      >
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
+                    </Box>
                   </Box>
                 </Paper>
               ))}
@@ -1341,21 +1521,54 @@ export default function Workouts() {
                 </Typography>
                 <Grid container spacing={1}>
                   {selectedPlan.days?.map((day) => (
-                    <Grid key={day.id}>
+                    <Grid key={day.id} size={{ xs: 12, sm: 6 }}>
                       <Paper
                         variant="outlined"
                         sx={{
-                          p: 1.5,
+                          p: 2,
                           cursor: 'pointer',
                           '&:hover': { borderColor: 'primary.main' },
                         }}
-                        onClick={() => setActiveDay(day)}
+                        onClick={() => handleActiveDayChange(day)}
                       >
-                        <Typography fontWeight="bold">{day.name}</Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {day.exercises?.length ?? 0} exercises
-                        </Typography>
-                        <Box sx={{ mt: 0.5 }}>
+                        <Box
+                          sx={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'flex-start',
+                          }}
+                        >
+                          <Box>
+                            <Typography fontWeight="bold">
+                              {day.name}
+                            </Typography>
+                            {day.scheduled_days?.length > 0 && (
+                              <Typography
+                                variant="caption"
+                                color="primary"
+                                display="block"
+                                fontWeight="bold"
+                              >
+                                {day.scheduled_days
+                                  .map((d) => d.slice(0, 3))
+                                  .join(', ')}
+                              </Typography>
+                            )}
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                              display="block"
+                            >
+                              {day.exercises?.length ?? 0} exercises
+                            </Typography>
+                          </Box>
+                          <MuscleReadiness
+                            day={day}
+                            lastTrainedMuscles={lastTrainedMuscles}
+                          />
+                        </Box>
+
+                        <Box sx={{ mt: 1 }}>
                           {day.exercises?.slice(0, 3).map((ex, i) => (
                             <Chip
                               key={i}

@@ -19,6 +19,7 @@ import {
   Chip,
   IconButton,
   Paper,
+  Tooltip,
 } from '@mui/material';
 import SyncIcon from '@mui/icons-material/Sync';
 import AddIcon from '@mui/icons-material/Add';
@@ -31,6 +32,16 @@ import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import axios from '../api';
 
+const DAYS_OF_WEEK = [
+  'Sunday',
+  'Monday',
+  'Tuesday',
+  'Wednesday',
+  'Thursday',
+  'Friday',
+  'Saturday',
+];
+
 const minutesToHm = (minutes) => {
   if (minutes === null || minutes === undefined || minutes === '') return '-';
   const h = Math.floor(minutes / 60);
@@ -38,7 +49,82 @@ const minutesToHm = (minutes) => {
   return `${h}:${m.toString().padStart(2, '0')}`;
 };
 
-export default function Dashboard({ onNavigate }) {
+function MuscleReadiness({ day, lastTrainedMuscles }) {
+  if (!lastTrainedMuscles) return null;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const muscles = new Set();
+  day.exercises.forEach((ex) => {
+    (ex.primary_muscles || '').split(',').forEach((m) => {
+      const t = m.trim().toLowerCase();
+      if (t) muscles.add(t);
+    });
+  });
+
+  const muscleStatus = Array.from(muscles).map((m) => {
+    const lastDateStr = lastTrainedMuscles[m];
+    if (!lastDateStr) return { muscle: m, status: 'ready', days: Infinity };
+
+    const lastDate = new Date(lastDateStr);
+    lastDate.setHours(0, 0, 0, 0);
+    const diffDays = Math.floor((today - lastDate) / (1000 * 60 * 60 * 24));
+
+    if (diffDays >= 2) return { muscle: m, status: 'ready', days: diffDays };
+    if (diffDays >= 1)
+      return { muscle: m, status: 'recovering', days: diffDays };
+    return { muscle: m, status: 'needs_rest', days: diffDays };
+  });
+
+  if (muscleStatus.length === 0) return null;
+
+  const overallStatus = muscleStatus.reduce((acc, curr) => {
+    if (curr.status === 'needs_rest') return 'needs_rest';
+    if (curr.status === 'recovering' && acc !== 'needs_rest')
+      return 'recovering';
+    return acc;
+  }, 'ready');
+
+  const statusColors = {
+    ready: 'success',
+    recovering: 'warning',
+    needs_rest: 'error',
+  };
+
+  const statusLabels = {
+    ready: 'Ready',
+    recovering: 'Recovering (1 day rest)',
+    needs_rest: 'Needs Rest (0 days rest)',
+  };
+
+  return (
+    <Box>
+      <Tooltip
+        title={
+          <Box sx={{ p: 0.5 }}>
+            {muscleStatus.map((m) => (
+              <Typography key={m.muscle} variant="caption" display="block">
+                {m.muscle.charAt(0).toUpperCase() + m.muscle.slice(1)}:{' '}
+                {m.status.replace('_', ' ')} (
+                {m.days === Infinity ? 'never' : m.days + ' days ago'})
+              </Typography>
+            ))}
+          </Box>
+        }
+      >
+        <Chip
+          label={statusLabels[overallStatus]}
+          color={statusColors[overallStatus]}
+          size="small"
+          variant="outlined"
+        />
+      </Tooltip>
+    </Box>
+  );
+}
+
+export default function Dashboard({ onNavigate, onStartWorkout }) {
   const [loading, setLoading] = useState(true);
   const [activeDateStr, setActiveDateStr] = useState(
     new Date().toLocaleDateString('en-CA')
@@ -50,6 +136,7 @@ export default function Dashboard({ onNavigate }) {
     measurements: [],
     sessions: [],
     photoDates: [],
+    lastTrainedMuscles: {},
   });
   const [plans, setPlans] = useState([]);
   const [syncing, setSyncing] = useState(false);
@@ -85,20 +172,28 @@ export default function Dashboard({ onNavigate }) {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [sleepRes, measureRes, sessionRes, planRes, photoRes] =
-        await Promise.all([
-          axios.get('/api/sleep'),
-          axios.get('/api/measurements'),
-          axios.get('/api/workouts/sessions?limit=100'),
-          axios.get('/api/workouts/plans'),
-          axios.get('/api/photos/dates'),
-        ]);
+      const [
+        sleepRes,
+        measureRes,
+        sessionRes,
+        planRes,
+        photoRes,
+        lastTrainedRes,
+      ] = await Promise.all([
+        axios.get('/api/sleep'),
+        axios.get('/api/measurements'),
+        axios.get('/api/workouts/sessions?limit=100'),
+        axios.get('/api/workouts/plans'),
+        axios.get('/api/photos/dates'),
+        axios.get('/api/workouts/last-trained-muscles'),
+      ]);
 
       setAllData({
         sleep: sleepRes.data,
         measurements: measureRes.data,
         sessions: sessionRes.data,
         photoDates: photoRes.data.map((d) => d.date),
+        lastTrainedMuscles: lastTrainedRes.data,
       });
       setPlans(planRes.data);
     } catch (error) {
@@ -113,15 +208,37 @@ export default function Dashboard({ onNavigate }) {
     fetchData();
   }, [fetchData]);
 
-  const activeData = useMemo(
-    () => ({
-      sleep: allData.sleep.find((s) => s.date === activeDateStr),
-      measurements: allData.measurements.find((m) => m.date === activeDateStr),
-      workout: allData.sessions.find((s) => s.date === activeDateStr),
-      hasPhotos: allData.photoDates.includes(activeDateStr),
-    }),
-    [allData, activeDateStr]
-  );
+  const activeData = useMemo(() => {
+    const sleep = allData.sleep.find((s) => s.date === activeDateStr);
+    const measurements = allData.measurements.find(
+      (m) => m.date === activeDateStr
+    );
+    const workout = allData.sessions.find((s) => s.date === activeDateStr);
+    const hasPhotos = allData.photoDates.includes(activeDateStr);
+
+    // Identify scheduled workout for this day
+    const dateObj = new Date(activeDateStr + 'T00:00:00');
+    const dayName = DAYS_OF_WEEK[dateObj.getDay()];
+    let scheduledWorkout = null;
+
+    plans.forEach((plan) => {
+      if (plan.days) {
+        plan.days.forEach((day) => {
+          if (day.scheduled_days && day.scheduled_days.includes(dayName)) {
+            scheduledWorkout = { ...day, plan_name: plan.name };
+          }
+        });
+      }
+    });
+
+    return {
+      sleep,
+      measurements,
+      workout,
+      hasPhotos,
+      scheduledWorkout,
+    };
+  }, [allData, activeDateStr, plans]);
 
   const showSnackbar = (message, severity = 'success') =>
     setSnackbar({ open: true, message, severity });
@@ -555,9 +672,47 @@ export default function Dashboard({ onNavigate }) {
                         </Grid>
                       </Grid>
                     </Box>
+                  ) : activeData.scheduledWorkout ? (
+                    <Box>
+                      <Box
+                        sx={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'flex-start',
+                        }}
+                      >
+                        <Box>
+                          <Typography variant="subtitle1" fontWeight="bold">
+                            {activeData.scheduledWorkout.name}
+                          </Typography>
+                          <Typography variant="body2" color="primary">
+                            Scheduled for today
+                          </Typography>
+                        </Box>
+                        <MuscleReadiness
+                          day={activeData.scheduledWorkout}
+                          lastTrainedMuscles={allData.lastTrainedMuscles}
+                        />
+                      </Box>
+                      <Typography variant="caption" color="text.secondary">
+                        {activeData.scheduledWorkout.plan_name}
+                      </Typography>
+                      <Box sx={{ mt: 1 }}>
+                        {activeData.scheduledWorkout.exercises
+                          .slice(0, 3)
+                          .map((ex, i) => (
+                            <Chip
+                              key={i}
+                              label={ex.name}
+                              size="small"
+                              sx={{ mr: 0.3, mb: 0.3, fontSize: '0.65rem' }}
+                            />
+                          ))}
+                      </Box>
+                    </Box>
                   ) : (
                     <Typography variant="body2" color="text.secondary">
-                      No workout recorded.
+                      No workout scheduled or recorded.
                     </Typography>
                   )}
                 </CardContent>
@@ -571,6 +726,18 @@ export default function Dashboard({ onNavigate }) {
                       onClick={() => onNavigate('Workouts')}
                     >
                       View Details
+                    </Button>
+                  ) : activeData.scheduledWorkout ? (
+                    <Button
+                      fullWidth
+                      variant="contained"
+                      size="small"
+                      color="secondary"
+                      onClick={() =>
+                        onStartWorkout(activeData.scheduledWorkout)
+                      }
+                    >
+                      Start Scheduled Workout
                     </Button>
                   ) : (
                     <Button
@@ -851,7 +1018,7 @@ export default function Dashboard({ onNavigate }) {
                     color="primary"
                     variant="outlined"
                     onClick={() => {
-                      onNavigate('Workouts');
+                      onStartWorkout({ ...day, plan_name: plan.name });
                       setOpenStartWorkout(false);
                     }}
                   />

@@ -44,6 +44,7 @@ export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [user, setUser] = useState(null);
+  const [activeWorkoutDay, setActiveWorkoutDay] = useState(null);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -98,9 +99,22 @@ export default function App() {
   const renderContent = () => {
     switch (activeTab) {
       case 'Dashboard':
-        return <Dashboard onNavigate={setActiveTab} />;
+        return (
+          <Dashboard
+            onNavigate={setActiveTab}
+            onStartWorkout={(day) => {
+              setActiveWorkoutDay(day);
+              setActiveTab('Workouts');
+            }}
+          />
+        );
       case 'Workouts':
-        return <Workouts />;
+        return (
+          <Workouts
+            activeDay={activeWorkoutDay}
+            onActiveDayChange={setActiveWorkoutDay}
+          />
+        );
       case 'Measurements':
         return <Measurements />;
       case 'Photos':
