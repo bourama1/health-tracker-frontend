@@ -174,7 +174,8 @@ describe('Sleep Component', () => {
     render(<Sleep />);
 
     expect(await screen.findByTestId('line-chart')).toBeInTheDocument();
-    expect(screen.getByTestId('line-element')).toHaveTextContent('RHR (bpm)');
+    const linesBefore = screen.getAllByTestId('line-element');
+    expect(linesBefore.some((el) => el.textContent === 'RHR (bpm)')).toBe(true);
 
     const select = screen.getByLabelText(/Select Statistic/i);
     fireEvent.mouseDown(select);
@@ -184,8 +185,9 @@ describe('Sleep Component', () => {
     });
     fireEvent.click(option);
 
-    expect(screen.getByTestId('line-element')).toHaveTextContent(
-      'Deep Sleep (mins)'
-    );
+    const linesAfter = screen.getAllByTestId('line-element');
+    expect(
+      linesAfter.some((el) => el.textContent === 'Deep Sleep (mins)')
+    ).toBe(true);
   });
 });

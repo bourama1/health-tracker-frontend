@@ -507,7 +507,7 @@ export default function Sleep() {
             >
               <Typography variant="h6">Sleep Trends</Typography>
               <FormControl size="small" sx={{ minWidth: 180 }}>
-                <InputLabel id="stat-select-label">Metric</InputLabel>
+                <InputLabel id="stat-select-label">Select Statistic</InputLabel>
                 <Select
                   labelId="stat-select-label"
                   value={selectedStat}

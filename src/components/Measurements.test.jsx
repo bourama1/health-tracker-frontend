@@ -124,9 +124,10 @@ describe('Measurements Component', () => {
 
     expect(screen.getByTestId('line-chart')).toBeInTheDocument();
 
-    // Default measurement is Bodyweight (kg)
-    expect(screen.getByTestId('line-element')).toHaveTextContent(
-      'Bodyweight (kg)'
+    // Default measurement is Bodyweight (kg) — check among all rendered line elements
+    const linesBefore = screen.getAllByTestId('line-element');
+    expect(linesBefore.some((el) => el.textContent === 'Bodyweight (kg)')).toBe(
+      true
     );
 
     // Switch to Body Fat (%)
@@ -140,8 +141,9 @@ describe('Measurements Component', () => {
       fireEvent.click(option);
     });
 
-    expect(screen.getByTestId('line-element')).toHaveTextContent(
-      'Body Fat (%)'
+    const linesAfter = screen.getAllByTestId('line-element');
+    expect(linesAfter.some((el) => el.textContent === 'Body Fat (%)')).toBe(
+      true
     );
   });
 

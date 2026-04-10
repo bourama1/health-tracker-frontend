@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { alpha } from '@mui/material/styles';
 import {
   Box,
   Button,
@@ -118,19 +119,6 @@ function ProgressDialog({ exerciseId, exerciseName, open, onClose }) {
   );
   const weightDomain = calcDomain(weightData);
   const volumeDomain = calcDomain(volumeData);
-
-  const CustomDot = (props) => {
-    const { cx, cy, payload } = props;
-    if (!payload.had_pr) return null;
-    return (
-      <EmojiEventsIcon
-        component="svg"
-        x={cx - 8}
-        y={cy - 14}
-        sx={{ fontSize: 16, color: 'warning.main' }}
-      />
-    );
-  };
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
@@ -792,6 +780,7 @@ function ActiveWorkout({ day, onSaved, onCancel }) {
         reps: ex.reps || '',
         rpe: '',
         notes: '',
+        completed: false, // Added completed flag for tracking
       }));
     });
     return init;
@@ -849,10 +838,28 @@ function ActiveWorkout({ day, onSaved, onCancel }) {
     }));
   };
 
+  const toggleSetComplete = (exId, setIdx) => {
+    setLogs((prev) => {
+      const isCompleted = !prev[exId][setIdx].completed;
+      if (isCompleted) {
+        setRestTimer({ seconds: 90 });
+      }
+      return {
+        ...prev,
+        [exId]: prev[exId].map((s, i) =>
+          i === setIdx ? { ...s, completed: isCompleted } : s
+        ),
+      };
+    });
+  };
+
   const addSet = (exId) => {
     setLogs((prev) => ({
       ...prev,
-      [exId]: [...prev[exId], { weight: '', reps: '', rpe: '', notes: '' }],
+      [exId]: [
+        ...prev[exId],
+        { weight: '', reps: '', rpe: '', notes: '', completed: false },
+      ],
     }));
   };
 
@@ -862,8 +869,6 @@ function ActiveWorkout({ day, onSaved, onCancel }) {
       [exId]: prev[exId].filter((_, i) => i !== setIdx),
     }));
   };
-
-  const handleSetDone = () => setRestTimer({ seconds: 90 });
 
   const handleSave = async () => {
     const flatLogs = [];
@@ -1005,21 +1010,52 @@ function ActiveWorkout({ day, onSaved, onCancel }) {
                 <TableBody>
                   {logs[ex.exercise_id]?.map((set, i) => {
                     const p = prev[i + 1];
+
+                    // Use theme-aware colors: success.main for completed, text.primary for active
+                    const rowTextColor = set.completed
+                      ? 'success.main'
+                      : 'text.primary';
+                    const prevTextColor = set.completed
+                      ? 'success.light'
+                      : 'text.secondary';
+
                     return (
-                      <TableRow key={i}>
+                      <TableRow
+                        key={i}
+                        sx={{
+                          // alpha(color, 0.1) creates a subtle tint that works in both light and dark modes
+                          bgcolor: set.completed
+                            ? (theme) => alpha(theme.palette.success.main, 0.15)
+                            : 'inherit',
+                          transition: 'background-color 0.3s ease',
+                          '& .MuiTableCell-root': {
+                            color: rowTextColor,
+                            borderBottom: set.completed
+                              ? (theme) =>
+                                  `1px solid ${alpha(theme.palette.success.main, 0.2)}`
+                              : 'inherit',
+                          },
+                        }}
+                      >
                         <TableCell>
                           <Chip
                             label={i + 1}
                             size="small"
-                            onClick={handleSetDone}
-                            sx={{ cursor: 'pointer' }}
+                            onClick={() => toggleSetComplete(ex.exercise_id, i)}
+                            color={set.completed ? 'success' : 'default'}
+                            variant={set.completed ? 'filled' : 'outlined'}
+                            sx={{
+                              cursor: 'pointer',
+                              fontWeight: 'bold',
+                            }}
                           />
                         </TableCell>
+
                         {ex.exercise_type !== 'cardio' && (
                           <TableCell>
                             <Typography
                               variant="caption"
-                              color="text.secondary"
+                              sx={{ color: prevTextColor }}
                             >
                               {p
                                 ? `${p.weight ?? '—'}kg × ${p.reps ?? '—'}`
@@ -1027,89 +1063,68 @@ function ActiveWorkout({ day, onSaved, onCancel }) {
                             </Typography>
                           </TableCell>
                         )}
-                        {ex.exercise_type !== 'bodyweight' &&
-                          ex.exercise_type !== 'cardio' && (
-                            <TableCell>
-                              <TextField
-                                size="small"
-                                type="number"
-                                sx={{ width: 70 }}
-                                value={set.weight}
-                                onChange={(e) =>
-                                  handleChange(
-                                    ex.exercise_id,
-                                    i,
-                                    'weight',
-                                    e.target.value
-                                  )
-                                }
-                                placeholder={
-                                  p?.weight != null ? String(p.weight) : '0'
-                                }
-                              />
-                            </TableCell>
-                          )}
-                        {ex.exercise_type !== 'cardio' && (
-                          <TableCell>
-                            <TextField
-                              size="small"
-                              type="number"
-                              sx={{ width: 60 }}
-                              value={set.reps}
-                              onChange={(e) =>
-                                handleChange(
-                                  ex.exercise_id,
-                                  i,
-                                  'reps',
-                                  e.target.value
-                                )
-                              }
-                              placeholder={
-                                p?.reps != null ? String(p.reps) : ''
-                              }
-                            />
-                          </TableCell>
+
+                        {[
+                          {
+                            field: 'weight',
+                            show:
+                              ex.exercise_type !== 'bodyweight' &&
+                              ex.exercise_type !== 'cardio',
+                            width: 70,
+                          },
+                          {
+                            field: 'reps',
+                            show: ex.exercise_type !== 'cardio',
+                            width: 60,
+                          },
+                          { field: 'rpe', show: true, width: 55 },
+                        ].map(
+                          (input) =>
+                            input.show && (
+                              <TableCell key={input.field}>
+                                <TextField
+                                  size="small"
+                                  type="number"
+                                  variant="standard" // Standard variant looks cleaner in tables
+                                  sx={{
+                                    width: input.width,
+                                    '& .MuiInputBase-input': {
+                                      color: rowTextColor,
+                                      fontWeight: set.completed ? 600 : 400,
+                                      textAlign: 'center',
+                                    },
+                                    '& .MuiInput-underline:before': {
+                                      borderBottomColor: set.completed
+                                        ? (theme) =>
+                                            alpha(
+                                              theme.palette.success.main,
+                                              0.4
+                                            )
+                                        : 'inherit',
+                                    },
+                                  }}
+                                  value={set[input.field]}
+                                  onChange={(e) =>
+                                    handleChange(
+                                      ex.exercise_id,
+                                      i,
+                                      input.field,
+                                      e.target.value
+                                    )
+                                  }
+                                />
+                              </TableCell>
+                            )
                         )}
-                        {ex.exercise_type === 'cardio' && (
-                          <TableCell>
-                            <TextField
-                              size="small"
-                              type="number"
-                              sx={{ width: 70 }}
-                              value={set.duration}
-                              onChange={(e) =>
-                                handleChange(
-                                  ex.exercise_id,
-                                  i,
-                                  'duration_seconds',
-                                  e.target.value
-                                )
-                              }
-                            />
-                          </TableCell>
-                        )}
-                        <TableCell>
-                          <TextField
-                            size="small"
-                            type="number"
-                            sx={{ width: 55 }}
-                            value={set.rpe}
-                            inputProps={{ min: 1, max: 10, step: 0.5 }}
-                            onChange={(e) =>
-                              handleChange(
-                                ex.exercise_id,
-                                i,
-                                'rpe',
-                                e.target.value
-                              )
-                            }
-                            placeholder="—"
-                          />
-                        </TableCell>
+
                         <TableCell>
                           <IconButton
                             size="small"
                             onClick={() => removeSet(ex.exercise_id, i)}
+                            sx={{
+                              color: set.completed ? 'success.main' : 'inherit',
+                              opacity: 0.7,
+                            }}
                           >
                             <DeleteIcon fontSize="inherit" />
                           </IconButton>
