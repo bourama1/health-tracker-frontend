@@ -173,10 +173,11 @@ describe('Sleep Component', () => {
   test('switches displayed statistic in trend chart', async () => {
     render(<Sleep />);
 
-    expect(await screen.findByTestId('line-chart')).toBeInTheDocument();
-    expect(screen.getByTestId('line-element')).toHaveTextContent('RHR (bpm)');
+    const charts = await screen.findAllByTestId('line-chart');
+    expect(charts.length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByTestId('line-element')[0]).toHaveTextContent('RHR (bpm)');
 
-    const select = screen.getByLabelText(/Select Statistic/i);
+    const select = screen.getByLabelText(/Metric/i);
     fireEvent.mouseDown(select);
 
     const option = await screen.findByRole('option', {
@@ -184,7 +185,7 @@ describe('Sleep Component', () => {
     });
     fireEvent.click(option);
 
-    expect(screen.getByTestId('line-element')).toHaveTextContent(
+    expect(screen.getAllByTestId('line-element')[0]).toHaveTextContent(
       'Deep Sleep (mins)'
     );
   });

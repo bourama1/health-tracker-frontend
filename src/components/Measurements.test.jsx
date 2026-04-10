@@ -70,14 +70,16 @@ describe('Measurements Component', () => {
     });
 
     expect(await screen.findByText('2023-01-01')).toBeInTheDocument();
-    expect(screen.getAllByText('80')).toHaveLength(1);
-    expect(screen.getAllByText('15')).toHaveLength(1);
-    expect(screen.getByText('100')).toBeInTheDocument();
-    expect(screen.getByText('85')).toBeInTheDocument();
-    expect(screen.getByText('35')).toBeInTheDocument();
-    expect(screen.getByText('28')).toBeInTheDocument();
-    expect(screen.getByText('38')).toBeInTheDocument();
-    expect(screen.getByText('60')).toBeInTheDocument();
+    // Use getAllByText and check if it contains the expected value at least once
+    // because it might appear in the overview cards too
+    expect(screen.getAllByText('80').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('15').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('100').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('85').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('35').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('28').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('38').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('60').length).toBeGreaterThanOrEqual(1);
   });
 
   test('submits form correctly with new fields', async () => {
@@ -122,16 +124,18 @@ describe('Measurements Component', () => {
       render(<Measurements />);
     });
 
-    expect(screen.getByTestId('line-chart')).toBeInTheDocument();
+    // There might be multiple charts (main + sparklines)
+    const charts = screen.getAllByTestId('line-chart');
+    expect(charts.length).toBeGreaterThanOrEqual(1);
 
-    // Default measurement is Bodyweight (kg)
-    expect(screen.getByTestId('line-element')).toHaveTextContent(
+    // Default measurement is Bodyweight (kg) - check first line element
+    expect(screen.getAllByTestId('line-element')[0]).toHaveTextContent(
       'Bodyweight (kg)'
     );
 
     // Switch to Body Fat (%)
     const select = screen.getByRole('combobox', {
-      name: /Select Measurement/i,
+      name: /Metric/i,
     });
     fireEvent.mouseDown(select);
 
@@ -140,7 +144,7 @@ describe('Measurements Component', () => {
       fireEvent.click(option);
     });
 
-    expect(screen.getByTestId('line-element')).toHaveTextContent(
+    expect(screen.getAllByTestId('line-element')[0]).toHaveTextContent(
       'Body Fat (%)'
     );
   });
