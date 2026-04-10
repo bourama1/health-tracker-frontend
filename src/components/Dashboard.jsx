@@ -20,6 +20,9 @@ import {
   IconButton,
   Paper,
   Tooltip,
+  ToggleButtonGroup,
+  ToggleButton,
+  useTheme,
 } from '@mui/material';
 import SyncIcon from '@mui/icons-material/Sync';
 import AddIcon from '@mui/icons-material/Add';
@@ -30,6 +33,7 @@ import BedtimeIcon from '@mui/icons-material/Bedtime';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import Body from '../vendor/body-highlighter';
 import axios from '../api';
 
 const DAYS_OF_WEEK = [
@@ -42,12 +46,148 @@ const DAYS_OF_WEEK = [
   'Saturday',
 ];
 
+const BODY_MAP_MAPPING = {
+  'trapezius-left-front': 'traps',
+  'trapezius-right-front': 'traps',
+  'trapezius-left-back': 'traps',
+  'trapezius-right-back': 'traps',
+  'upper-back-left': 'middle back',
+  'upper-back-right': 'middle back',
+  'lower-back-left': 'lower back',
+  'lower-back-right': 'lower back',
+  'chest-left': 'chest',
+  'chest-right': 'chest',
+  'biceps-left': 'biceps',
+  'biceps-right': 'biceps',
+  'triceps-left-front': 'triceps',
+  'triceps-right-front': 'triceps',
+  'triceps-left-back': 'triceps',
+  'triceps-right-back': 'triceps',
+  'forearm-left-front': 'forearms',
+  'forearm-right-front': 'forearms',
+  'forearm-left-back': 'forearms',
+  'forearm-right-back': 'forearms',
+  'deltoids-left-front': 'shoulders',
+  'deltoids-right-front': 'shoulders',
+  'deltoids-left-back': 'shoulders',
+  'deltoids-right-back': 'shoulders',
+  'abs-upper': 'abdominals',
+  'abs-lower': 'abdominals',
+  'obliques-left': 'abdominals',
+  'obliques-right': 'abdominals',
+  'adductors-left-front': 'adductors',
+  'adductors-right-front': 'adductors',
+  'adductors-left-back': 'adductors',
+  'adductors-right-back': 'adductors',
+  'hamstring-left': 'hamstrings',
+  'hamstring-right': 'hamstrings',
+  'quadriceps-left': 'quadriceps',
+  'quadriceps-right': 'quadriceps',
+  'calves-left-front': 'calves',
+  'calves-right-front': 'calves',
+  'calves-left-back': 'calves',
+  'calves-right-back': 'calves',
+  'gluteal-left': 'glutes',
+  'gluteal-right': 'glutes',
+  'neck-left-front': 'neck',
+  'neck-right-front': 'neck',
+  'neck-left-back': 'neck',
+  'neck-right-back': 'neck',
+};
+
 const minutesToHm = (minutes) => {
   if (minutes === null || minutes === undefined || minutes === '') return '-';
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;
   return `${h}:${m.toString().padStart(2, '0')}`;
 };
+
+function MuscleHighlight({ exercises, sessionLogs }) {
+  const [view, setView] = useState('front');
+  const theme = useTheme();
+
+  const muscleFrequency = useMemo(() => {
+    const freq = {};
+    const processMuscles = (muscleStr, weight = 1) => {
+      (muscleStr || '').split(',').forEach((m) => {
+        const t = m.trim().toLowerCase();
+        if (t) freq[t] = (freq[t] || 0) + weight;
+      });
+    };
+
+    if (sessionLogs && sessionLogs.length > 0) {
+      sessionLogs.forEach((log) => {
+        processMuscles(log.primary_muscles, 1);
+        processMuscles(log.secondary_muscles, 0.5);
+      });
+    } else if (exercises) {
+      exercises.forEach((ex) => {
+        processMuscles(ex.primary_muscles, 2);
+        processMuscles(ex.secondary_muscles, 1);
+      });
+    }
+
+    return freq;
+  }, [exercises, sessionLogs]);
+
+  const data = useMemo(() => {
+    return Object.keys(BODY_MAP_MAPPING)
+      .map((slug) => {
+        const backendMuscle = BODY_MAP_MAPPING[slug];
+        const freq = muscleFrequency[backendMuscle] || 0;
+        return {
+          slug: slug,
+          intensity: Math.ceil(freq),
+        };
+      })
+      .filter((d) => d.intensity > 0);
+  }, [muscleFrequency]);
+
+  if (data.length === 0) return null;
+
+  return (
+    <Box sx={{ mt: 2, textAlign: 'center' }}>
+      <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+        Muscles Worked Intensity
+      </Typography>
+      <ToggleButtonGroup
+        value={view}
+        exclusive
+        onChange={(_, v) => v && setView(v)}
+        size="small"
+        sx={{
+          mb: 1,
+          '& .MuiToggleButton-root': {
+            borderColor: 'divider',
+            '&.Mui-selected': {
+              bgcolor: 'primary.main',
+              color: 'primary.contrastText',
+              '&:hover': {
+                bgcolor: 'primary.dark',
+              },
+            },
+          },
+        }}
+      >
+        <ToggleButton value="front" sx={{ px: 1, py: 0.2, fontSize: '0.7rem' }}>
+          Front
+        </ToggleButton>
+        <ToggleButton value="back" sx={{ px: 1, py: 0.2, fontSize: '0.7rem' }}>
+          Back
+        </ToggleButton>
+      </ToggleButtonGroup>
+      <Box sx={{ width: 140, height: 200, mx: 'auto' }}>
+        <Body
+          side={view}
+          data={data}
+          colors={['#e3f2fd', '#90caf9', '#42a5f5', '#1e88e5', '#1565c0']}
+          scale={0.5}
+          theme={theme.palette.mode}
+        />
+      </Box>
+    </Box>
+  );
+}
 
 function MuscleReadiness({ day, lastTrainedMuscles }) {
   if (!lastTrainedMuscles) return null;
@@ -671,6 +811,7 @@ export default function Dashboard({ onNavigate, onStartWorkout }) {
                           </Typography>
                         </Grid>
                       </Grid>
+                      <MuscleHighlight sessionLogs={activeData.workout.logs} />
                     </Box>
                   ) : activeData.scheduledWorkout ? (
                     <Box>
@@ -709,6 +850,9 @@ export default function Dashboard({ onNavigate, onStartWorkout }) {
                             />
                           ))}
                       </Box>
+                      <MuscleHighlight
+                        exercises={activeData.scheduledWorkout.exercises}
+                      />
                     </Box>
                   ) : (
                     <Typography variant="body2" color="text.secondary">

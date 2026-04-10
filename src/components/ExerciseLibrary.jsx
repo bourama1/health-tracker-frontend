@@ -20,10 +20,14 @@ import {
   IconButton,
   Tooltip,
   CircularProgress,
+  ToggleButtonGroup,
+  ToggleButton,
+  useTheme,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import CloseIcon from '@mui/icons-material/Close';
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
+import Body from '../vendor/body-highlighter';
 import axios from '../api';
 
 // ─── Muscle chip colours ─────────────────────────────────────────────────────
@@ -47,6 +51,194 @@ const MUSCLE_COLORS = {
   adductors: '#ce93d8',
   abductors: '#f48fb1',
 };
+
+const BODY_MAP_MAPPING = {
+  'trapezius-left-front': 'traps',
+  'trapezius-right-front': 'traps',
+  'trapezius-left-back': 'traps',
+  'trapezius-right-back': 'traps',
+  'upper-back-left': 'middle back',
+  'upper-back-right': 'middle back',
+  'lower-back-left': 'lower back',
+  'lower-back-right': 'lower back',
+  'chest-left': 'chest',
+  'chest-right': 'chest',
+  'biceps-left': 'biceps',
+  'biceps-right': 'biceps',
+  'triceps-left-front': 'triceps',
+  'triceps-right-front': 'triceps',
+  'triceps-left-back': 'triceps',
+  'triceps-right-back': 'triceps',
+  'forearm-left-front': 'forearms',
+  'forearm-right-front': 'forearms',
+  'forearm-left-back': 'forearms',
+  'forearm-right-back': 'forearms',
+  'deltoids-left-front': 'shoulders',
+  'deltoids-right-front': 'shoulders',
+  'deltoids-left-back': 'shoulders',
+  'deltoids-right-back': 'shoulders',
+  'abs-upper': 'abdominals',
+  'abs-lower': 'abdominals',
+  'obliques-left': 'abdominals',
+  'obliques-right': 'abdominals',
+  'adductors-left-front': 'adductors',
+  'adductors-right-front': 'adductors',
+  'adductors-left-back': 'adductors',
+  'adductors-right-back': 'adductors',
+  'hamstring-left': 'hamstrings',
+  'hamstring-right': 'hamstrings',
+  'quadriceps-left': 'quadriceps',
+  'quadriceps-right': 'quadriceps',
+  'calves-left-front': 'calves',
+  'calves-right-front': 'calves',
+  'calves-left-back': 'calves',
+  'calves-right-back': 'calves',
+  'gluteal-left': 'glutes',
+  'gluteal-right': 'glutes',
+  'neck-left-front': 'neck',
+  'neck-right-front': 'neck',
+  'neck-left-back': 'neck',
+  'neck-right-back': 'neck',
+};
+
+function BodyMapFilter({ selectedMuscle, onMuscleClick, muscles }) {
+  const [view, setView] = useState('front');
+  const theme = useTheme();
+
+  // Highlight muscles that map to the selected muscle
+  const data = selectedMuscle
+    ? Object.keys(BODY_MAP_MAPPING)
+        .filter(
+          (slug) => BODY_MAP_MAPPING[slug] === selectedMuscle.toLowerCase()
+        )
+        .map((slug) => ({
+          slug: slug,
+          intensity: 1,
+        }))
+    : [];
+
+  const handleModelClick = (b) => {
+    const slug = b.slug;
+    const mapped = BODY_MAP_MAPPING[slug];
+    if (mapped) {
+      // Find the actual muscle name from filters to maintain case
+      const actualMuscle = (muscles || []).find(
+        (m) => m.toLowerCase() === mapped.toLowerCase()
+      );
+      onMuscleClick(actualMuscle || mapped);
+    }
+  };
+
+  return (
+    <Paper variant="outlined" sx={{ p: 2, mb: 2, bgcolor: 'background.paper' }}>
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: { xs: 'column', md: 'row' },
+          gap: 3,
+          alignItems: 'center',
+        }}
+      >
+        <Box sx={{ flexShrink: 0, textAlign: 'center' }}>
+          <Typography variant="subtitle2" gutterBottom>
+            Body Map Explorer
+          </Typography>
+          <ToggleButtonGroup
+            value={view}
+            exclusive
+            onChange={(_, v) => v && setView(v)}
+            size="small"
+            sx={{
+              mb: 2,
+              '& .MuiToggleButton-root': {
+                borderColor: 'divider',
+                '&.Mui-selected': {
+                  bgcolor: 'primary.main',
+                  color: 'primary.contrastText',
+                  '&:hover': {
+                    bgcolor: 'primary.dark',
+                  },
+                },
+              },
+            }}
+          >
+            <ToggleButton value="front">Front</ToggleButton>
+            <ToggleButton value="back">Back</ToggleButton>
+          </ToggleButtonGroup>
+          <Box
+            sx={{
+              width: 200,
+              height: 320,
+              mx: 'auto',
+              // Note: teambuildr component uses SVG Path internally, so hover styling might need adjustment
+              '& path': { cursor: 'pointer', transition: 'fill 0.2s' },
+              '& path:hover': { opacity: 0.7 },
+            }}
+          >
+            <Body
+              side={view}
+              data={data}
+              onBodyPartPress={handleModelClick}
+              colors={['#2196f3', '#2196f3']}
+              scale={0.8}
+              theme={theme.palette.mode}
+            />
+          </Box>
+        </Box>
+
+        <Divider
+          orientation="vertical"
+          flexItem
+          sx={{ display: { xs: 'none', md: 'block' } }}
+        />
+
+        <Box sx={{ flex: 1 }}>
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{ mb: 1, display: 'block' }}
+          >
+            Click a muscle on the body to filter, or select from the list:
+          </Typography>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+            {(muscles || []).map((m) => {
+              const active = selectedMuscle === m;
+              const color = MUSCLE_COLORS[m?.toLowerCase()] || '#90a4ae';
+              return (
+                <Chip
+                  key={m}
+                  label={m}
+                  size="small"
+                  onClick={() => onMuscleClick(m)}
+                  sx={{
+                    cursor: 'pointer',
+                    bgcolor: active ? color : 'transparent',
+                    color: active ? '#fff' : color,
+                    borderColor: color,
+                    border: '1px solid',
+                    fontWeight: active ? 700 : 400,
+                    fontSize: '0.7rem',
+                    '&:hover': { opacity: 0.85 },
+                  }}
+                />
+              );
+            })}
+          </Box>
+          {selectedMuscle && (
+            <Button
+              size="small"
+              onClick={() => onMuscleClick(selectedMuscle)}
+              sx={{ mt: 1.5 }}
+              color="inherit"
+            >
+              Clear Muscle Filter
+            </Button>
+          )}
+        </Box>
+      </Box>
+    </Paper>
+  );
+}
 
 function MuscleChip({ muscle, isPrimary }) {
   const color = MUSCLE_COLORS[muscle?.toLowerCase()] || '#90a4ae';
@@ -506,33 +698,12 @@ export default function ExerciseLibrary({ onAddExercise, showAdd = false }) {
         )}
       </Box>
 
-      {/* Quick muscle filter pills */}
-      {filters.muscles && (
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 2 }}>
-          {filters.muscles.map((m) => {
-            const active = activeFilters.muscle === m;
-            const color = MUSCLE_COLORS[m?.toLowerCase()] || '#90a4ae';
-            return (
-              <Chip
-                key={m}
-                label={m}
-                size="small"
-                onClick={() => setFilter('muscle', m)}
-                sx={{
-                  cursor: 'pointer',
-                  bgcolor: active ? color : 'transparent',
-                  color: active ? '#fff' : color,
-                  borderColor: color,
-                  border: '1px solid',
-                  fontWeight: active ? 700 : 400,
-                  fontSize: '0.7rem',
-                  '&:hover': { opacity: 0.85 },
-                }}
-              />
-            );
-          })}
-        </Box>
-      )}
+      {/* Body Map Filter */}
+      <BodyMapFilter
+        selectedMuscle={activeFilters.muscle}
+        onMuscleClick={(m) => setFilter('muscle', m)}
+        muscles={filters.muscles}
+      />
 
       {/* Results count + pagination */}
       <Box

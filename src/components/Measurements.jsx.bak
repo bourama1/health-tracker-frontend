@@ -22,49 +22,8 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-  ReferenceLine,
 } from 'recharts';
 import axios from '../api';
-
-/**
- * Compute a linear trendline over an array of {value} objects.
- * Returns the same array augmented with a `trend` field.
- */
-function addTrendline(data) {
-  const pts = data
-    .map((d, i) => ({ i, v: parseFloat(d.value) }))
-    .filter((p) => !isNaN(p.v));
-  if (pts.length < 2) return data.map((d) => ({ ...d, trend: undefined }));
-
-  const n = pts.length;
-  const sumX = pts.reduce((a, p) => a + p.i, 0);
-  const sumY = pts.reduce((a, p) => a + p.v, 0);
-  const sumXY = pts.reduce((a, p) => a + p.i * p.v, 0);
-  const sumXX = pts.reduce((a, p) => a + p.i * p.i, 0);
-  const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
-  const intercept = (sumY - slope * sumX) / n;
-
-  return data.map((d, i) => ({
-    ...d,
-    trend: parseFloat((slope * i + intercept).toFixed(2)),
-  }));
-}
-
-/**
- * Calculate a nice Y-axis domain from data values with padding.
- * Pads ~15% of the range on each side (minimum 1 unit).
- */
-function calcDomain(data, key = 'value') {
-  const vals = data.map((d) => parseFloat(d[key])).filter((v) => !isNaN(v));
-  if (vals.length === 0) return ['auto', 'auto'];
-  const min = Math.min(...vals);
-  const max = Math.max(...vals);
-  const pad = Math.max((max - min) * 0.15, 1);
-  return [
-    parseFloat((min - pad).toFixed(1)),
-    parseFloat((max + pad).toFixed(1)),
-  ];
-}
 
 const measurementOptions = [
   { label: 'Bodyweight (kg)', value: 'bodyweight' },
@@ -145,17 +104,13 @@ export default function Measurements() {
     setSelectedMeasurement(e.target.value);
   };
 
-  const chartData = addTrendline(
-    measurements
-      .slice()
-      .reverse()
-      .map((m) => ({
-        date: m.date,
-        value: m[selectedMeasurement],
-      }))
-  );
-
-  const yDomain = calcDomain(chartData);
+  const chartData = measurements
+    .slice()
+    .reverse()
+    .map((m) => ({
+      date: m.date,
+      value: m[selectedMeasurement],
+    }));
 
   if (loading) {
     return (
@@ -331,8 +286,8 @@ export default function Measurements() {
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={chartData}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" tick={{ fontSize: 10 }} />
-                  <YAxis domain={yDomain} />
+                  <XAxis dataKey="date" />
+                  <YAxis />
                   <Tooltip />
                   <Legend />
                   <Line
@@ -345,17 +300,6 @@ export default function Measurements() {
                     }
                     stroke="#1976d2"
                     activeDot={{ r: 8 }}
-                    dot={{ r: 3 }}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="trend"
-                    name="Trend"
-                    stroke="#ff7043"
-                    strokeWidth={2}
-                    strokeDasharray="6 3"
-                    dot={false}
-                    activeDot={false}
                   />
                 </LineChart>
               </ResponsiveContainer>

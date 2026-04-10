@@ -34,45 +34,6 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
-
-/**
- * Compute a linear trendline over an array of {value} objects.
- * Returns the same array augmented with a `trend` field.
- */
-function addTrendline(data) {
-  const pts = data
-    .map((d, i) => ({ i, v: parseFloat(d.value) }))
-    .filter((p) => !isNaN(p.v));
-  if (pts.length < 2) return data.map((d) => ({ ...d, trend: undefined }));
-
-  const n = pts.length;
-  const sumX = pts.reduce((a, p) => a + p.i, 0);
-  const sumY = pts.reduce((a, p) => a + p.v, 0);
-  const sumXY = pts.reduce((a, p) => a + p.i * p.v, 0);
-  const sumXX = pts.reduce((a, p) => a + p.i * p.i, 0);
-  const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
-  const intercept = (sumY - slope * sumX) / n;
-
-  return data.map((d, i) => ({
-    ...d,
-    trend: parseFloat((slope * i + intercept).toFixed(2)),
-  }));
-}
-
-/**
- * Calculate a nice Y-axis domain from data values with padding (~15%).
- */
-function calcDomain(data, key = 'value') {
-  const vals = data.map((d) => parseFloat(d[key])).filter((v) => !isNaN(v));
-  if (vals.length === 0) return ['auto', 'auto'];
-  const min = Math.min(...vals);
-  const max = Math.max(...vals);
-  const pad = Math.max((max - min) * 0.15, 1);
-  return [
-    parseFloat((min - pad).toFixed(1)),
-    parseFloat((max + pad).toFixed(1)),
-  ];
-}
 import axios from '../api';
 
 // ─── HELPERS ────────────────────────────────────────────────────────────────
@@ -335,14 +296,10 @@ export default function Sleep() {
     }
   };
 
-  const chartData = addTrendline(
-    history.map((h) => ({
-      date: h.date,
-      value: h[selectedStat],
-    }))
-  );
-
-  const yDomain = calcDomain(chartData);
+  const chartData = history.map((h) => ({
+    date: h.date,
+    value: h[selectedStat],
+  }));
 
   if (loading) {
     return (
@@ -532,8 +489,8 @@ export default function Sleep() {
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={chartData}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" tick={{ fontSize: 10 }} />
-                  <YAxis domain={yDomain} />
+                  <XAxis dataKey="date" />
+                  <YAxis />
                   <ChartTooltip />
                   <Legend />
                   <Line
@@ -549,17 +506,6 @@ export default function Sleep() {
                     }
                     activeDot={{ r: 8 }}
                     strokeWidth={2}
-                    dot={{ r: 3 }}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="trend"
-                    name="Trend"
-                    stroke="#ff7043"
-                    strokeWidth={2}
-                    strokeDasharray="6 3"
-                    dot={false}
-                    activeDot={false}
                   />
                 </LineChart>
               </ResponsiveContainer>
