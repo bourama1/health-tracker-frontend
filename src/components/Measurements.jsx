@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Box,
   Typography,
@@ -12,6 +12,8 @@ import {
   MenuItem,
   CircularProgress,
   Alert,
+  ToggleButtonGroup,
+  ToggleButton,
 } from '@mui/material';
 import {
   LineChart,
@@ -25,46 +27,7 @@ import {
   ReferenceLine,
 } from 'recharts';
 import axios from '../api';
-
-/**
- * Compute a linear trendline over an array of {value} objects.
- * Returns the same array augmented with a `trend` field.
- */
-function addTrendline(data) {
-  const pts = data
-    .map((d, i) => ({ i, v: parseFloat(d.value) }))
-    .filter((p) => !isNaN(p.v));
-  if (pts.length < 2) return data.map((d) => ({ ...d, trend: undefined }));
-
-  const n = pts.length;
-  const sumX = pts.reduce((a, p) => a + p.i, 0);
-  const sumY = pts.reduce((a, p) => a + p.v, 0);
-  const sumXY = pts.reduce((a, p) => a + p.i * p.v, 0);
-  const sumXX = pts.reduce((a, p) => a + p.i * p.i, 0);
-  const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
-  const intercept = (sumY - slope * sumX) / n;
-
-  return data.map((d, i) => ({
-    ...d,
-    trend: parseFloat((slope * i + intercept).toFixed(2)),
-  }));
-}
-
-/**
- * Calculate a nice Y-axis domain from data values with padding.
- * Pads ~15% of the range on each side (minimum 1 unit).
- */
-function calcDomain(data, key = 'value') {
-  const vals = data.map((d) => parseFloat(d[key])).filter((v) => !isNaN(v));
-  if (vals.length === 0) return ['auto', 'auto'];
-  const min = Math.min(...vals);
-  const max = Math.max(...vals);
-  const pad = Math.max((max - min) * 0.15, 1);
-  return [
-    parseFloat((min - pad).toFixed(1)),
-    parseFloat((max + pad).toFixed(1)),
-  ];
-}
+import { addTrendline, calcDomain, formatDateTick } from '../utils/chartUtils';
 
 const measurementOptions = [
   { label: 'Bodyweight (kg)', value: 'bodyweight' },
@@ -177,14 +140,24 @@ export default function Measurements() {
         </Alert>
       )}
 
-      <Grid container spacing={3}>
-        {/* Form Section */}
-        <Grid size={{ xs: 12, md: 4 }}>
-          <Paper sx={{ p: 2, mb: 3 }}>
+      {/* ── Top row: form left, big chart right ─────────────────────── */}
+      <Grid container spacing={3} sx={{ alignItems: 'stretch' }}>
+        <Grid size={{ xs: 12, md: 4 }} sx={{ display: 'flex' }}>
+          <Paper
+            sx={{
+              p: 2,
+              display: 'flex',
+              flexDirection: 'column',
+              width: '100%',
+            }}
+          >
             <Typography variant="h6" gutterBottom>
               Add New Entry
             </Typography>
-            <form onSubmit={handleSubmit}>
+            <form
+              onSubmit={handleSubmit}
+              style={{ display: 'flex', flexDirection: 'column', flex: 1 }}
+            >
               <TextField
                 fullWidth
                 label="Date"
@@ -294,45 +267,77 @@ export default function Measurements() {
                   />
                 </Grid>
               </Grid>
-              <Button
-                type="submit"
-                variant="contained"
-                fullWidth
-                color="primary"
-              >
-                Save Entry
-              </Button>
+              <Box sx={{ mt: 'auto' }}>
+                <Button
+                  type="submit"
+                  variant="contained"
+                  fullWidth
+                  color="primary"
+                >
+                  Save Entry
+                </Button>
+              </Box>
             </form>
           </Paper>
+        </Grid>
 
-          {/* Graph Section */}
-          <Paper sx={{ p: 2 }}>
-            <Typography variant="h6" gutterBottom>
-              Progress Graph
-            </Typography>
-            <FormControl fullWidth sx={{ mb: 2 }}>
-              <InputLabel id="measurement-select-label">
-                Select Measurement
-              </InputLabel>
-              <Select
-                labelId="measurement-select-label"
-                value={selectedMeasurement}
-                label="Select Measurement"
-                onChange={handleMeasurementChange}
+        {/* ── Main chart: full height, right side ── */}
+        <Grid size={{ xs: 12, md: 8 }} sx={{ display: 'flex' }}>
+          <Paper
+            sx={{
+              p: 2,
+              display: 'flex',
+              flexDirection: 'column',
+              width: '100%',
+            }}
+          >
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                mb: 2,
+                flexWrap: 'wrap',
+                gap: 1,
+              }}
+            >
+              <Typography variant="h6">Progress Chart</Typography>
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 2,
+                  flexWrap: 'wrap',
+                }}
               >
-                {measurementOptions.map((option) => (
-                  <MenuItem key={option.value} value={option.value}>
-                    {option.label}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            <Box sx={{ width: '100%', height: 300 }}>
+                <FormControl size="small" sx={{ minWidth: 180 }}>
+                  <InputLabel id="measurement-select-label">Metric</InputLabel>
+                  <Select
+                    labelId="measurement-select-label"
+                    value={selectedMeasurement}
+                    label="Metric"
+                    onChange={handleMeasurementChange}
+                  >
+                    {measurementOptions.map((option) => (
+                      <MenuItem key={option.value} value={option.value}>
+                        {option.label}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Box>
+            </Box>
+            <Box sx={{ flex: 1, minHeight: 200 }}>
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={chartData}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" tick={{ fontSize: 10 }} />
-                  <YAxis domain={yDomain} />
+                  <XAxis
+                    dataKey="date"
+                    tick={{ fontSize: 10 }}
+                    tickFormatter={formatDateTick}
+                    interval="preserveStartEnd"
+                  />
+                  <YAxis domain={yDomain} tick={{ fontSize: 11 }} />
                   <Tooltip />
                   <Legend />
                   <Line
@@ -346,6 +351,7 @@ export default function Measurements() {
                     stroke="#1976d2"
                     activeDot={{ r: 8 }}
                     dot={{ r: 3 }}
+                    strokeWidth={2}
                   />
                   <Line
                     type="monotone"
@@ -362,44 +368,149 @@ export default function Measurements() {
             </Box>
           </Paper>
         </Grid>
-
-        {/* List Section */}
-        <Grid size={{ xs: 12, md: 8 }}>
-          <Paper sx={{ p: 2, maxHeight: 800, overflow: 'auto' }}>
-            <Typography variant="h6" gutterBottom>
-              History
-            </Typography>
-            {measurements.map((m) => (
-              <Box
-                key={m.id}
-                sx={{
-                  p: 2,
-                  mb: 2,
-                  border: '1px solid',
-                  borderColor: 'divider',
-                  borderRadius: 1,
-                }}
-              >
-                <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
-                  {m.date}
-                </Typography>
-                <Grid container spacing={1}>
-                  {measurementOptions.map((opt) => (
-                    <Grid key={opt.value} size={3}>
-                      <Typography variant="caption" color="text.secondary">
-                        {opt.label.split(' ')[0]}:
-                      </Typography>
-                      <Typography variant="body2">
-                        {m[opt.value] || '-'}
-                      </Typography>
-                    </Grid>
-                  ))}
-                </Grid>
-              </Box>
-            ))}
-          </Paper>
-        </Grid>
       </Grid>
+
+      {/* ── Sparkline row: all metrics at a glance ── */}
+      <Paper sx={{ p: 2, mt: 3 }}>
+        <Typography variant="h6" gutterBottom>
+          All Metrics Overview
+        </Typography>
+        <Grid container spacing={2}>
+          {measurementOptions.map((opt) => {
+            const sparkData = addTrendline(
+              measurements
+                .slice()
+                .reverse()
+                .map((m) => ({ date: m.date, value: m[opt.value] }))
+            );
+            const hasData = sparkData.some(
+              (d) => d.value != null && d.value !== ''
+            );
+            if (!hasData) return null;
+            const domain = calcDomain(sparkData);
+            const vals = sparkData
+              .map((d) => parseFloat(d.value))
+              .filter((v) => !isNaN(v));
+            const latest = vals[vals.length - 1];
+            const first = vals[0];
+            const delta =
+              latest != null && first != null ? latest - first : null;
+            const trendColor =
+              delta === null
+                ? 'text.secondary'
+                : delta < 0
+                  ? 'success.main'
+                  : delta > 0
+                    ? 'error.main'
+                    : 'text.secondary';
+            return (
+              <Grid key={opt.value} size={{ xs: 12, sm: 6, md: 3 }}>
+                <Paper
+                  variant="outlined"
+                  onClick={() => setSelectedMeasurement(opt.value)}
+                  sx={{
+                    p: 1.5,
+                    cursor: 'pointer',
+                    borderColor:
+                      selectedMeasurement === opt.value
+                        ? 'primary.main'
+                        : 'divider',
+                    borderWidth: selectedMeasurement === opt.value ? 2 : 1,
+                    '&:hover': { borderColor: 'primary.light' },
+                  }}
+                >
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'baseline',
+                      mb: 0.5,
+                    }}
+                  >
+                    <Typography variant="caption" color="text.secondary" noWrap>
+                      {opt.label}
+                    </Typography>
+                    {delta !== null && (
+                      <Typography
+                        variant="caption"
+                        color={trendColor}
+                        sx={{ ml: 1, flexShrink: 0 }}
+                      >
+                        {delta > 0 ? '+' : ''}
+                        {delta.toFixed(1)}
+                      </Typography>
+                    )}
+                  </Box>
+                  {latest != null && (
+                    <Typography
+                      variant="body2"
+                      fontWeight="bold"
+                      sx={{ mb: 0.5 }}
+                    >
+                      {latest}
+                    </Typography>
+                  )}
+                  <Box sx={{ width: '100%', height: 50 }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={sparkData}>
+                        <YAxis domain={domain} hide />
+                        <Line
+                          type="monotone"
+                          dataKey="value"
+                          stroke="#1976d2"
+                          strokeWidth={1.5}
+                          dot={false}
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="trend"
+                          stroke="#ff7043"
+                          strokeWidth={1}
+                          strokeDasharray="4 2"
+                          dot={false}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </Box>
+                </Paper>
+              </Grid>
+            );
+          })}
+        </Grid>
+      </Paper>
+
+      {/* ── History list ── */}
+      <Paper sx={{ p: 2, mt: 3, maxHeight: 600, overflow: 'auto' }}>
+        <Typography variant="h6" gutterBottom>
+          History
+        </Typography>
+        {measurements.map((m) => (
+          <Box
+            key={m.id}
+            sx={{
+              p: 2,
+              mb: 2,
+              border: '1px solid',
+              borderColor: 'divider',
+              borderRadius: 1,
+            }}
+          >
+            <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
+              {m.date}
+            </Typography>
+            <Grid container spacing={1}>
+              {measurementOptions.map((opt) => (
+                <Grid key={opt.value} size={3}>
+                  <Typography variant="caption" color="text.secondary">
+                    {opt.label.split(' ')[0]}:
+                  </Typography>
+                  <Typography variant="body2">{m[opt.value] || '-'}</Typography>
+                </Grid>
+              ))}
+            </Grid>
+          </Box>
+        ))}
+      </Paper>
     </Box>
   );
 }

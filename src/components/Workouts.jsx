@@ -36,6 +36,17 @@ import AddIcon from '@mui/icons-material/Add';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import axios from '../api';
+import { addTrendline, calcDomain, formatDateTick } from '../utils/chartUtils';
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip as ChartTooltip,
+  Legend,
+  ResponsiveContainer,
+} from 'recharts';
 import ExerciseLibrary from './ExerciseLibrary';
 
 const DAYS_OF_WEEK = [
@@ -94,15 +105,35 @@ function ProgressDialog({ exerciseId, exerciseName, open, onClose }) {
       .catch(console.error);
   }, [open, exerciseId]);
 
-  const maxWeight = data.length
-    ? Math.max(...data.map((d) => d.max_weight || 0))
-    : 0;
-  const maxVolume = data.length
-    ? Math.max(...data.map((d) => d.total_volume || 0))
-    : 1;
+  const weightData = addTrendline(
+    data.map((d) => ({
+      date: d.date,
+      value: d.max_weight,
+      had_pr: d.had_pr,
+      reps: d.max_reps,
+    }))
+  );
+  const volumeData = addTrendline(
+    data.map((d) => ({ date: d.date, value: Math.round(d.total_volume) }))
+  );
+  const weightDomain = calcDomain(weightData);
+  const volumeDomain = calcDomain(volumeData);
+
+  const CustomDot = (props) => {
+    const { cx, cy, payload } = props;
+    if (!payload.had_pr) return null;
+    return (
+      <EmojiEventsIcon
+        component="svg"
+        x={cx - 8}
+        y={cy - 14}
+        sx={{ fontSize: 16, color: 'warning.main' }}
+      />
+    );
+  };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle>
         <TrendingUpIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
         {exerciseName} — Progress
@@ -112,61 +143,128 @@ function ProgressDialog({ exerciseId, exerciseName, open, onClose }) {
           <Typography color="text.secondary">No history yet.</Typography>
         ) : (
           <>
-            <Typography variant="subtitle2" gutterBottom>
-              Max Weight per Session
+            <Typography variant="subtitle2" gutterBottom sx={{ mt: 1 }}>
+              Max Weight per Session (kg)
             </Typography>
-            {data.slice(-12).map((d, i) => (
-              <Box key={i} sx={{ mb: 0.5 }}>
-                <Box
-                  sx={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    mb: 0.2,
-                  }}
-                >
-                  <Typography variant="caption">{d.date}</Typography>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    {d.had_pr ? (
-                      <EmojiEventsIcon fontSize="inherit" color="warning" />
-                    ) : null}
-                    <Typography variant="caption">
-                      {d.max_weight} kg × {d.max_reps} reps
-                    </Typography>
-                  </Box>
-                </Box>
-                <LinearProgress
-                  variant="determinate"
-                  value={maxWeight > 0 ? (d.max_weight / maxWeight) * 100 : 0}
-                  sx={{ height: 6, borderRadius: 2 }}
-                />
-              </Box>
-            ))}
-            <Box sx={{ mt: 2 }}>
-              <Typography variant="subtitle2" gutterBottom>
-                Total Volume (weight × reps)
-              </Typography>
-              {data.slice(-12).map((d, i) => (
-                <Box key={i} sx={{ mb: 0.5 }}>
-                  <Box
-                    sx={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      mb: 0.2,
-                    }}
-                  >
-                    <Typography variant="caption">{d.date}</Typography>
-                    <Typography variant="caption">
-                      {Math.round(d.total_volume)} kg total
-                    </Typography>
-                  </Box>
-                  <LinearProgress
-                    variant="determinate"
-                    value={(d.total_volume / maxVolume) * 100}
-                    color="secondary"
-                    sx={{ height: 6, borderRadius: 2 }}
+            <Box sx={{ width: '100%', height: 220, mb: 3 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={weightData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis
+                    dataKey="date"
+                    tick={{ fontSize: 10 }}
+                    tickFormatter={formatDateTick}
+                    interval="preserveStartEnd"
                   />
-                </Box>
-              ))}
+                  <YAxis
+                    domain={weightDomain}
+                    tick={{ fontSize: 11 }}
+                    unit=" kg"
+                  />
+                  <ChartTooltip
+                    formatter={(v, name) => [
+                      name === 'Trend' ? `${v} kg` : `${v} kg`,
+                      name,
+                    ]}
+                    labelFormatter={formatDateTick}
+                  />
+                  <Legend />
+                  <Line
+                    type="monotone"
+                    dataKey="value"
+                    name="Max weight"
+                    stroke="#1976d2"
+                    strokeWidth={2}
+                    dot={(props) => {
+                      const { cx, cy, payload } = props;
+                      return payload.had_pr ? (
+                        <circle
+                          key={`dot-${cx}`}
+                          cx={cx}
+                          cy={cy}
+                          r={5}
+                          fill="#ed6c02"
+                          stroke="#fff"
+                          strokeWidth={1}
+                        />
+                      ) : (
+                        <circle
+                          key={`dot-${cx}`}
+                          cx={cx}
+                          cy={cy}
+                          r={3}
+                          fill="#1976d2"
+                        />
+                      );
+                    }}
+                    activeDot={{ r: 6 }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="trend"
+                    name="Trend"
+                    stroke="#ff7043"
+                    strokeWidth={2}
+                    strokeDasharray="6 3"
+                    dot={false}
+                    activeDot={false}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </Box>
+            <Box
+              sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 2 }}
+            >
+              <Box
+                sx={{
+                  width: 10,
+                  height: 10,
+                  borderRadius: '50%',
+                  bgcolor: 'warning.main',
+                }}
+              />
+              <Typography variant="caption" color="text.secondary">
+                Orange dot = personal record on that session
+              </Typography>
+            </Box>
+
+            <Typography variant="subtitle2" gutterBottom>
+              Total Volume per Session (kg lifted)
+            </Typography>
+            <Box sx={{ width: '100%', height: 200 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={volumeData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis
+                    dataKey="date"
+                    tick={{ fontSize: 10 }}
+                    tickFormatter={formatDateTick}
+                    interval="preserveStartEnd"
+                  />
+                  <YAxis domain={volumeDomain} tick={{ fontSize: 11 }} />
+                  <ChartTooltip labelFormatter={formatDateTick} />
+                  <Legend />
+                  <Line
+                    type="monotone"
+                    dataKey="value"
+                    name="Volume"
+                    stroke="#9c27b0"
+                    strokeWidth={2}
+                    dot={{ r: 3 }}
+                    activeDot={{ r: 6 }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="trend"
+                    name="Trend"
+                    stroke="#ff7043"
+                    strokeWidth={2}
+                    strokeDasharray="6 3"
+                    dot={false}
+                    activeDot={false}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
             </Box>
           </>
         )}

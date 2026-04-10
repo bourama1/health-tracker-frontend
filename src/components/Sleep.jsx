@@ -35,45 +35,8 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 
-/**
- * Compute a linear trendline over an array of {value} objects.
- * Returns the same array augmented with a `trend` field.
- */
-function addTrendline(data) {
-  const pts = data
-    .map((d, i) => ({ i, v: parseFloat(d.value) }))
-    .filter((p) => !isNaN(p.v));
-  if (pts.length < 2) return data.map((d) => ({ ...d, trend: undefined }));
-
-  const n = pts.length;
-  const sumX = pts.reduce((a, p) => a + p.i, 0);
-  const sumY = pts.reduce((a, p) => a + p.v, 0);
-  const sumXY = pts.reduce((a, p) => a + p.i * p.v, 0);
-  const sumXX = pts.reduce((a, p) => a + p.i * p.i, 0);
-  const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
-  const intercept = (sumY - slope * sumX) / n;
-
-  return data.map((d, i) => ({
-    ...d,
-    trend: parseFloat((slope * i + intercept).toFixed(2)),
-  }));
-}
-
-/**
- * Calculate a nice Y-axis domain from data values with padding (~15%).
- */
-function calcDomain(data, key = 'value') {
-  const vals = data.map((d) => parseFloat(d[key])).filter((v) => !isNaN(v));
-  if (vals.length === 0) return ['auto', 'auto'];
-  const min = Math.min(...vals);
-  const max = Math.max(...vals);
-  const pad = Math.max((max - min) * 0.15, 1);
-  return [
-    parseFloat((min - pad).toFixed(1)),
-    parseFloat((max + pad).toFixed(1)),
-  ];
-}
 import axios from '../api';
+import { addTrendline, calcDomain, formatDateTick } from '../utils/chartUtils';
 
 // ─── HELPERS ────────────────────────────────────────────────────────────────
 
@@ -399,13 +362,24 @@ export default function Sleep() {
         </Box>
       </Box>
 
-      <Grid container spacing={3}>
-        <Grid size={{ xs: 12, md: 4 }}>
-          <Paper sx={{ p: 2, mb: 3 }}>
+      {/* ── Top row: form left, chart right, same height ── */}
+      <Grid container spacing={3} sx={{ alignItems: 'stretch' }}>
+        <Grid size={{ xs: 12, md: 4 }} sx={{ display: 'flex' }}>
+          <Paper
+            sx={{
+              p: 2,
+              display: 'flex',
+              flexDirection: 'column',
+              width: '100%',
+            }}
+          >
             <Typography variant="h6" gutterBottom>
               Add Sleep Entry
             </Typography>
-            <form onSubmit={handleSubmit}>
+            <form
+              onSubmit={handleSubmit}
+              style={{ display: 'flex', flexDirection: 'column', flex: 1 }}
+            >
               <TextField
                 fullWidth
                 label="Date"
@@ -498,42 +472,67 @@ export default function Sleep() {
                   />
                 </Grid>
               </Grid>
-              <Button
-                variant="contained"
-                type="submit"
-                fullWidth
-                color="primary"
-              >
-                Save Entry
-              </Button>
+              <Box sx={{ mt: 'auto' }}>
+                <Button
+                  variant="contained"
+                  type="submit"
+                  fullWidth
+                  color="primary"
+                >
+                  Save Entry
+                </Button>
+              </Box>
             </form>
           </Paper>
+        </Grid>
 
-          <Paper sx={{ p: 2 }}>
-            <Typography variant="h6" gutterBottom>
-              Sleep Trends
-            </Typography>
-            <FormControl fullWidth sx={{ mb: 2 }}>
-              <InputLabel id="stat-select-label">Select Statistic</InputLabel>
-              <Select
-                labelId="stat-select-label"
-                value={selectedStat}
-                label="Select Statistic"
-                onChange={(e) => setSelectedStat(e.target.value)}
-              >
-                {sleepStatsOptions.map((option) => (
-                  <MenuItem key={option.value} value={option.value}>
-                    {option.label}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            <Box sx={{ width: '100%', height: 250 }}>
+        <Grid size={{ xs: 12, md: 8 }} sx={{ display: 'flex' }}>
+          <Paper
+            sx={{
+              p: 2,
+              display: 'flex',
+              flexDirection: 'column',
+              width: '100%',
+            }}
+          >
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                mb: 2,
+                flexWrap: 'wrap',
+                gap: 1,
+              }}
+            >
+              <Typography variant="h6">Sleep Trends</Typography>
+              <FormControl size="small" sx={{ minWidth: 180 }}>
+                <InputLabel id="stat-select-label">Metric</InputLabel>
+                <Select
+                  labelId="stat-select-label"
+                  value={selectedStat}
+                  label="Metric"
+                  onChange={(e) => setSelectedStat(e.target.value)}
+                >
+                  {sleepStatsOptions.map((option) => (
+                    <MenuItem key={option.value} value={option.value}>
+                      {option.label}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Box>
+            <Box sx={{ flex: 1, minHeight: 0 }}>
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={chartData}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" tick={{ fontSize: 10 }} />
-                  <YAxis domain={yDomain} />
+                  <XAxis
+                    dataKey="date"
+                    tick={{ fontSize: 10 }}
+                    tickFormatter={formatDateTick}
+                    interval="preserveStartEnd"
+                  />
+                  <YAxis domain={yDomain} tick={{ fontSize: 11 }} />
                   <ChartTooltip />
                   <Legend />
                   <Line
@@ -566,117 +565,223 @@ export default function Sleep() {
             </Box>
           </Paper>
         </Grid>
-
-        <Grid size={{ xs: 12, md: 8 }}>
-          <TableContainer component={Paper} sx={{ maxHeight: 800 }}>
-            <Table size="small" stickyHeader>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Date</TableCell>
-                  <TableCell align="right">Bedtime</TableCell>
-                  <TableCell align="right">Wake Up</TableCell>
-                  <TableCell align="right">RHR</TableCell>
-                  <TableCell align="right">Deep</TableCell>
-                  <TableCell align="right">REM</TableCell>
-                  <TableCell align="right">Light</TableCell>
-                  <TableCell align="right">Awake</TableCell>
-                  <TableCell align="right">Actions</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {[...history].reverse().map((row) => (
-                  <TableRow key={row.id} hover>
-                    <TableCell sx={{ fontWeight: 'bold' }}>
-                      {row.date}
-                    </TableCell>
-                    <TableCell
-                      align="right"
-                      sx={{
-                        color: getDynamicColor(
-                          'bedtime_dev',
-                          getTimeDeviation(row.bedtime, 22, 0)
-                        ),
-                        fontWeight: 'bold',
-                      }}
-                    >
-                      {row.bedtime}
-                    </TableCell>
-                    <TableCell
-                      align="right"
-                      sx={{
-                        color: getDynamicColor(
-                          'wake_dev',
-                          getTimeDeviation(row.wake_time, 6, 0)
-                        ),
-                        fontWeight: 'bold',
-                      }}
-                    >
-                      {row.wake_time}
-                    </TableCell>
-                    <TableCell
-                      align="right"
-                      sx={{
-                        color: getDynamicColor('rhr', row.rhr),
-                        fontWeight: 'bold',
-                      }}
-                    >
-                      {row.rhr || '-'}
-                    </TableCell>
-                    <TableCell
-                      align="right"
-                      sx={{
-                        color: getDynamicColor(
-                          'deep_sleep_minutes',
-                          row.deep_sleep_minutes
-                        ),
-                        fontWeight: 'bold',
-                      }}
-                    >
-                      {minutesToHm(row.deep_sleep_minutes)}
-                    </TableCell>
-                    <TableCell
-                      align="right"
-                      sx={{
-                        color: getDynamicColor(
-                          'rem_sleep_minutes',
-                          row.rem_sleep_minutes
-                        ),
-                        fontWeight: 'bold',
-                      }}
-                    >
-                      {minutesToHm(row.rem_sleep_minutes)}
-                    </TableCell>
-                    <TableCell align="right">
-                      {minutesToHm(row.light_minutes)}
-                    </TableCell>
-                    <TableCell
-                      align="right"
-                      sx={{
-                        color: getDynamicColor(
-                          'awake_minutes',
-                          row.awake_minutes
-                        ),
-                        fontWeight: 'bold',
-                      }}
-                    >
-                      {minutesToHm(row.awake_minutes)}
-                    </TableCell>
-                    <TableCell align="right">
-                      <IconButton
-                        size="small"
-                        color="error"
-                        onClick={() => handleDelete(row.id)}
-                      >
-                        <DeleteIcon fontSize="small" />
-                      </IconButton>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </Grid>
       </Grid>
+
+      {/* ── Sparkline overview: all sleep metrics ── */}
+      <Paper sx={{ p: 2, mt: 3 }}>
+        <Typography variant="h6" gutterBottom>
+          All Metrics Overview
+        </Typography>
+        <Grid container spacing={2}>
+          {sleepStatsOptions.map((opt) => {
+            const sparkData = addTrendline(
+              history.map((h) => ({ date: h.date, value: h[opt.value] }))
+            );
+            const hasData = sparkData.some(
+              (d) => d.value != null && d.value !== ''
+            );
+            if (!hasData) return null;
+            const domain = calcDomain(sparkData);
+            const vals = sparkData
+              .map((d) => parseFloat(d.value))
+              .filter((v) => !isNaN(v));
+            const latest = vals[vals.length - 1];
+            const first = vals[0];
+            const delta =
+              latest != null && first != null ? latest - first : null;
+            // For RHR and awake, lower is better; for sleep stages, higher is better
+            const lowerIsBetter = opt.better === 'lower';
+            const improving =
+              delta !== null && (lowerIsBetter ? delta < 0 : delta > 0);
+            const trendColor =
+              delta === null
+                ? 'text.secondary'
+                : improving
+                  ? 'success.main'
+                  : 'error.main';
+            const latestDisplay =
+              opt.value === 'rhr'
+                ? `${latest} bpm`
+                : latest != null
+                  ? minutesToHm(Math.round(latest))
+                  : '-';
+            return (
+              <Grid key={opt.value} size={{ xs: 12, sm: 6, md: 'grow' }}>
+                <Paper
+                  variant="outlined"
+                  onClick={() => setSelectedStat(opt.value)}
+                  sx={{
+                    p: 1.5,
+                    cursor: 'pointer',
+                    borderColor:
+                      selectedStat === opt.value ? 'primary.main' : 'divider',
+                    borderWidth: selectedStat === opt.value ? 2 : 1,
+                    '&:hover': { borderColor: 'primary.light' },
+                  }}
+                >
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'baseline',
+                      mb: 0.5,
+                    }}
+                  >
+                    <Typography variant="caption" color="text.secondary" noWrap>
+                      {opt.label}
+                    </Typography>
+                    {delta !== null && (
+                      <Typography
+                        variant="caption"
+                        color={trendColor}
+                        sx={{ ml: 1, flexShrink: 0 }}
+                      >
+                        {delta > 0 ? '+' : ''}
+                        {opt.value === 'rhr'
+                          ? delta.toFixed(1)
+                          : minutesToHm(Math.abs(Math.round(delta)))}
+                      </Typography>
+                    )}
+                  </Box>
+                  <Typography
+                    variant="body2"
+                    fontWeight="bold"
+                    sx={{ mb: 0.5 }}
+                  >
+                    {latestDisplay}
+                  </Typography>
+                  <Box sx={{ width: '100%', height: 50 }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={sparkData}>
+                        <YAxis domain={domain} hide />
+                        <Line
+                          type="monotone"
+                          dataKey="value"
+                          stroke={opt.color}
+                          strokeWidth={1.5}
+                          dot={false}
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="trend"
+                          stroke="#ff7043"
+                          strokeWidth={1}
+                          strokeDasharray="4 2"
+                          dot={false}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </Box>
+                </Paper>
+              </Grid>
+            );
+          })}
+        </Grid>
+      </Paper>
+
+      {/* ── History table, full width ── */}
+      <TableContainer component={Paper} sx={{ mt: 3, maxHeight: 600 }}>
+        <Table size="small" stickyHeader>
+          <TableHead>
+            <TableRow>
+              <TableCell>Date</TableCell>
+              <TableCell align="right">Bedtime</TableCell>
+              <TableCell align="right">Wake Up</TableCell>
+              <TableCell align="right">RHR</TableCell>
+              <TableCell align="right">Deep</TableCell>
+              <TableCell align="right">REM</TableCell>
+              <TableCell align="right">Light</TableCell>
+              <TableCell align="right">Awake</TableCell>
+              <TableCell align="right">Actions</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {[...history].reverse().map((row) => (
+              <TableRow key={row.id} hover>
+                <TableCell sx={{ fontWeight: 'bold' }}>{row.date}</TableCell>
+                <TableCell
+                  align="right"
+                  sx={{
+                    color: getDynamicColor(
+                      'bedtime_dev',
+                      getTimeDeviation(row.bedtime, 22, 0)
+                    ),
+                    fontWeight: 'bold',
+                  }}
+                >
+                  {row.bedtime}
+                </TableCell>
+                <TableCell
+                  align="right"
+                  sx={{
+                    color: getDynamicColor(
+                      'wake_dev',
+                      getTimeDeviation(row.wake_time, 6, 0)
+                    ),
+                    fontWeight: 'bold',
+                  }}
+                >
+                  {row.wake_time}
+                </TableCell>
+                <TableCell
+                  align="right"
+                  sx={{
+                    color: getDynamicColor('rhr', row.rhr),
+                    fontWeight: 'bold',
+                  }}
+                >
+                  {row.rhr || '-'}
+                </TableCell>
+                <TableCell
+                  align="right"
+                  sx={{
+                    color: getDynamicColor(
+                      'deep_sleep_minutes',
+                      row.deep_sleep_minutes
+                    ),
+                    fontWeight: 'bold',
+                  }}
+                >
+                  {minutesToHm(row.deep_sleep_minutes)}
+                </TableCell>
+                <TableCell
+                  align="right"
+                  sx={{
+                    color: getDynamicColor(
+                      'rem_sleep_minutes',
+                      row.rem_sleep_minutes
+                    ),
+                    fontWeight: 'bold',
+                  }}
+                >
+                  {minutesToHm(row.rem_sleep_minutes)}
+                </TableCell>
+                <TableCell align="right">
+                  {minutesToHm(row.light_minutes)}
+                </TableCell>
+                <TableCell
+                  align="right"
+                  sx={{
+                    color: getDynamicColor('awake_minutes', row.awake_minutes),
+                    fontWeight: 'bold',
+                  }}
+                >
+                  {minutesToHm(row.awake_minutes)}
+                </TableCell>
+                <TableCell align="right">
+                  <IconButton
+                    size="small"
+                    color="error"
+                    onClick={() => handleDelete(row.id)}
+                  >
+                    <DeleteIcon fontSize="small" />
+                  </IconButton>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
 
       <Snackbar
         open={snackbar.open}

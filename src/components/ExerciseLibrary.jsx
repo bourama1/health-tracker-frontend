@@ -29,6 +29,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 import Body from '../vendor/body-highlighter';
 import axios from '../api';
+import { BODY_MAP_MAPPING } from '../constants/muscles';
 
 // ─── Muscle chip colours ─────────────────────────────────────────────────────
 
@@ -50,55 +51,6 @@ const MUSCLE_COLORS = {
   neck: '#90a4ae',
   adductors: '#ce93d8',
   abductors: '#f48fb1',
-};
-
-const BODY_MAP_MAPPING = {
-  'trapezius-left-front': 'traps',
-  'trapezius-right-front': 'traps',
-  'trapezius-left-back': 'traps',
-  'trapezius-right-back': 'traps',
-  'upper-back-left': 'middle back',
-  'upper-back-right': 'middle back',
-  'lower-back-left': 'lower back',
-  'lower-back-right': 'lower back',
-  'chest-left': 'chest',
-  'chest-right': 'chest',
-  'biceps-left': 'biceps',
-  'biceps-right': 'biceps',
-  'triceps-left-front': 'triceps',
-  'triceps-right-front': 'triceps',
-  'triceps-left-back': 'triceps',
-  'triceps-right-back': 'triceps',
-  'forearm-left-front': 'forearms',
-  'forearm-right-front': 'forearms',
-  'forearm-left-back': 'forearms',
-  'forearm-right-back': 'forearms',
-  'deltoids-left-front': 'shoulders',
-  'deltoids-right-front': 'shoulders',
-  'deltoids-left-back': 'shoulders',
-  'deltoids-right-back': 'shoulders',
-  'abs-upper': 'abdominals',
-  'abs-lower': 'abdominals',
-  'obliques-left': 'abdominals',
-  'obliques-right': 'abdominals',
-  'adductors-left-front': 'adductors',
-  'adductors-right-front': 'adductors',
-  'adductors-left-back': 'adductors',
-  'adductors-right-back': 'adductors',
-  'hamstring-left': 'hamstrings',
-  'hamstring-right': 'hamstrings',
-  'quadriceps-left': 'quadriceps',
-  'quadriceps-right': 'quadriceps',
-  'calves-left-front': 'calves',
-  'calves-right-front': 'calves',
-  'calves-left-back': 'calves',
-  'calves-right-back': 'calves',
-  'gluteal-left': 'glutes',
-  'gluteal-right': 'glutes',
-  'neck-left-front': 'neck',
-  'neck-right-front': 'neck',
-  'neck-left-back': 'neck',
-  'neck-right-back': 'neck',
 };
 
 function BodyMapFilter({ selectedMuscle, onMuscleClick, muscles }) {
