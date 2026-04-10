@@ -1,20 +1,21 @@
 # Health Tracker Frontend
 
-A comprehensive personal health and fitness dashboard built with React, Material UI, and Recharts. This application allows users to track their workouts, body measurements, sleep patterns, and progress photos in one centralized place.
+A comprehensive personal health and fitness dashboard built with React 19, Material UI v7, and Recharts. This application allows users to track their workouts, body measurements, sleep patterns, and progress photos in one centralized place.
 
 ## 🚀 Features
 
-- **Workout Tracking**: Create custom workout plans, log sessions, track Personal Records (PRs), and visualize muscle volume distribution.
-- **Body Measurements**: Track weight and various body measurements over time with interactive charts.
-- **Progress Photos**: Seamlessly integrate with Google Photos to manage and view your fitness progress pictures.
-- **Sleep Logging**: Monitor your sleep duration and quality to ensure optimal recovery.
+- **Workout Tracking**: Create custom workout plans, log sessions with RPE tracking, receive intelligent weight suggestions, track Personal Records (PRs), and visualize muscle volume distribution.
+- **Exercise Library**: Explore a vast library of exercises with an interactive **Body Map Explorer** to filter by muscle group.
+- **Body Measurements**: Track weight and various body measurements over time with interactive charts and trendline analysis.
+- **Progress Photos**: Manage and compare your fitness progress pictures with secure **Cloudinary** integration.
+- **Sleep Analysis**: Monitor your sleep duration and quality, featuring **Google Fit synchronization** for automated data entry.
 - **Dark/Light Mode**: Toggle between light and dark themes for a comfortable viewing experience.
 - **Google Authentication**: Secure sign-in using Google OAuth.
 
 ## 🛠️ Tech Stack
 
-- **Frontend**: [React](https://reactjs.org/)
-- **UI Components**: [Material UI (MUI)](https://mui.com/)
+- **Frontend**: [React 19](https://reactjs.org/)
+- **UI Components**: [Material UI (MUI) v7](https://mui.com/)
 - **Data Visualization**: [Recharts](https://recharts.org/)
 - **API Client**: [Axios](https://axios-http.com/)
 - **Testing**: [Jest](https://jestjs.io/) & [React Testing Library](https://testing-library.com/docs/react-testing-library/intro/)

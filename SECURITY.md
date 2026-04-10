@@ -12,7 +12,7 @@ At this time, we only support the latest version of Health Tracker Frontend.
 
 We take the security of our project seriously. If you find a security vulnerability, please do **not** open a public issue. Instead, please report it via one of the following methods:
 
-- **Email**: [INSERT SECURITY EMAIL]
+- **Email**: security@healthtracker.example
 - **GitHub**: Open a draft security advisory through the GitHub repository (if available).
 
 Please include the following details in your report:
