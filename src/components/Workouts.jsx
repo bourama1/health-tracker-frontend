@@ -119,19 +119,6 @@ function ProgressDialog({ exerciseId, exerciseName, open, onClose }) {
   const weightDomain = calcDomain(weightData);
   const volumeDomain = calcDomain(volumeData);
 
-  const CustomDot = (props) => {
-    const { cx, cy, payload } = props;
-    if (!payload.had_pr) return null;
-    return (
-      <EmojiEventsIcon
-        component="svg"
-        x={cx - 8}
-        y={cy - 14}
-        sx={{ fontSize: 16, color: 'warning.main' }}
-      />
-    );
-  };
-
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle>

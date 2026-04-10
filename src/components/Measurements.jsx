@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Typography,
@@ -12,8 +12,6 @@ import {
   MenuItem,
   CircularProgress,
   Alert,
-  ToggleButtonGroup,
-  ToggleButton,
 } from '@mui/material';
 import {
   LineChart,
@@ -24,7 +22,6 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-  ReferenceLine,
 } from 'recharts';
 import axios from '../api';
 import { addTrendline, calcDomain, formatDateTick } from '../utils/chartUtils';
