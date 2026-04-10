@@ -13,7 +13,7 @@ We love your input! We want to make contributing to this project as easy and tra
 1.  **Fork the repository** to your own GitHub account.
 2.  **Clone the project** to your local machine:
     ```bash
-    git clone https://github.com/your-username/health-tracker-frontend.git
+    git clone https://github.com/health-tracker/health-tracker-frontend.git
     ```
 3.  **Create a branch** for your work:
     ```bash

@@ -5,8 +5,9 @@ A comprehensive personal health and fitness dashboard built with React, Material
 ## 🚀 Features
 
 - **Workout Tracking**: Create custom workout plans, log sessions, track Personal Records (PRs), and visualize muscle volume distribution.
-- **Body Measurements**: Track weight and various body measurements over time with interactive charts.
-- **Progress Photos**: Seamlessly integrate with Google Photos to manage and view your fitness progress pictures.
+- **Body Map Explorer**: Interactive anatomical visualization to explore exercises by target muscle groups.
+- **Body Measurements**: Track weight and various body measurements over time with interactive charts and trendlines.
+- **Progress Photos**: Seamlessly integrate with Google Photos to manage and view your fitness progress pictures with side-by-side comparison.
 - **Sleep Logging**: Monitor your sleep duration and quality to ensure optimal recovery.
 - **Dark/Light Mode**: Toggle between light and dark themes for a comfortable viewing experience.
 - **Google Authentication**: Secure sign-in using Google OAuth.
@@ -16,6 +17,7 @@ A comprehensive personal health and fitness dashboard built with React, Material
 - **Frontend**: [React](https://reactjs.org/)
 - **UI Components**: [Material UI (MUI)](https://mui.com/)
 - **Data Visualization**: [Recharts](https://recharts.org/)
+- **Anatomical Visuals**: [@teambuildr/react-native-body-highlighter](https://github.com/TeamBuildr/react-native-body-highlighter)
 - **API Client**: [Axios](https://axios-http.com/)
 - **Testing**: [Jest](https://jestjs.io/) & [React Testing Library](https://testing-library.com/docs/react-testing-library/intro/)
 
