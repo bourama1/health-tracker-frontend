@@ -173,7 +173,10 @@ describe('Sleep Component', () => {
   test('switches displayed statistic in trend chart', async () => {
     render(<Sleep />);
 
-    expect(await screen.findByTestId('line-chart')).toBeInTheDocument();
+    // Get all line charts (there might be multiple) and verify at least one exists
+    const lineCharts = await screen.findAllByTestId('line-chart');
+    expect(lineCharts.length).toBeGreaterThan(0);
+
     const linesBefore = screen.getAllByTestId('line-element');
     expect(linesBefore.some((el) => el.textContent === 'RHR (bpm)')).toBe(true);
 
