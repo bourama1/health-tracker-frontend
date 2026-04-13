@@ -434,7 +434,14 @@ export default function Dashboard({ onNavigate, onStartWorkout }) {
       <Grid container spacing={3}>
         {/* Calendar Section */}
         <Grid size={{ xs: 12, lg: 5 }}>
-          <Paper sx={{ p: 2, height: '100%' }}>
+          <Paper
+            sx={{
+              p: 2,
+              height: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+          >
             <Box
               sx={{
                 display: 'flex',
@@ -463,8 +470,10 @@ export default function Dashboard({ onNavigate, onStartWorkout }) {
               sx={{
                 display: 'grid',
                 gridTemplateColumns: 'repeat(7, 1fr)',
+                gridAutoRows: '1fr',
                 gap: 1,
                 textAlign: 'center',
+                flex: 1,
               }}
             >
               {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
@@ -478,7 +487,8 @@ export default function Dashboard({ onNavigate, onStartWorkout }) {
                 </Typography>
               ))}
               {calendarDays.map((d, idx) => {
-                if (!d) return <Box key={`empty-${idx}`} />;
+                if (!d)
+                  return <Box key={`empty-${idx}`} sx={{ height: '100%' }} />;
                 const isActive = d.dateStr === activeDateStr;
                 const isToday =
                   d.dateStr === new Date().toLocaleDateString('en-CA');
@@ -490,7 +500,8 @@ export default function Dashboard({ onNavigate, onStartWorkout }) {
                     onClick={() => setActiveDateStr(d.dateStr)}
                     sx={{
                       p: 0.5,
-                      minHeight: 60,
+                      height: '100%',
+                      minHeight: 85,
                       cursor: 'pointer',
                       border: '1px solid',
                       borderColor: isActive ? 'primary.main' : 'divider',
@@ -509,7 +520,8 @@ export default function Dashboard({ onNavigate, onStartWorkout }) {
                       sx={{
                         fontWeight: isToday ? 'bold' : 'normal',
                         color: isToday ? 'primary.main' : 'text.primary',
-                        fontSize: '0.75rem',
+                        fontSize: '0.9rem',
+                        mb: 1,
                       }}
                     >
                       {d.day}
@@ -517,32 +529,40 @@ export default function Dashboard({ onNavigate, onStartWorkout }) {
 
                     <Box
                       sx={{
-                        display: 'flex',
-                        flexWrap: 'wrap',
-                        justifyContent: 'center',
-                        gap: 0.2,
-                        mt: 0.5,
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(2, 1fr)',
+                        gap: 0.8,
+                        mt: 'auto',
+                        mb: 1,
                       }}
                     >
-                      {d.hasSleep && (
+                      {d.hasSleep ? (
                         <BedtimeIcon
-                          sx={{ fontSize: 12, color: 'info.main' }}
+                          sx={{ fontSize: 24, color: 'info.main' }}
                         />
+                      ) : (
+                        <Box sx={{ width: 24, height: 24 }} />
                       )}
-                      {d.hasWorkout && (
+                      {d.hasWorkout ? (
                         <FitnessCenterIcon
-                          sx={{ fontSize: 12, color: 'error.main' }}
+                          sx={{ fontSize: 24, color: 'error.main' }}
                         />
+                      ) : (
+                        <Box sx={{ width: 24, height: 24 }} />
                       )}
-                      {d.hasMeasurements && (
+                      {d.hasMeasurements ? (
                         <MonitorWeightIcon
-                          sx={{ fontSize: 12, color: 'success.main' }}
+                          sx={{ fontSize: 24, color: 'success.main' }}
                         />
+                      ) : (
+                        <Box sx={{ width: 24, height: 24 }} />
                       )}
-                      {d.hasPhotos && (
+                      {d.hasPhotos ? (
                         <PhotoCameraIcon
-                          sx={{ fontSize: 12, color: 'warning.main' }}
+                          sx={{ fontSize: 24, color: 'warning.main' }}
                         />
+                      ) : (
+                        <Box sx={{ width: 24, height: 24 }} />
                       )}
                     </Box>
                   </Paper>
@@ -552,29 +572,29 @@ export default function Dashboard({ onNavigate, onStartWorkout }) {
 
             <Box
               sx={{
-                mt: 2,
+                mt: 3,
                 display: 'flex',
-                gap: 2,
+                gap: 3,
                 flexWrap: 'wrap',
                 justifyContent: 'center',
               }}
             >
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                <BedtimeIcon sx={{ fontSize: 14, color: 'info.main' }} />
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <BedtimeIcon sx={{ fontSize: 18, color: 'info.main' }} />
                 <Typography variant="caption">Sleep</Typography>
               </Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                <FitnessCenterIcon sx={{ fontSize: 14, color: 'error.main' }} />
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <FitnessCenterIcon sx={{ fontSize: 18, color: 'error.main' }} />
                 <Typography variant="caption">Workout</Typography>
               </Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <MonitorWeightIcon
-                  sx={{ fontSize: 14, color: 'success.main' }}
+                  sx={{ fontSize: 18, color: 'success.main' }}
                 />
                 <Typography variant="caption">Measures</Typography>
               </Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                <PhotoCameraIcon sx={{ fontSize: 14, color: 'warning.main' }} />
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <PhotoCameraIcon sx={{ fontSize: 18, color: 'warning.main' }} />
                 <Typography variant="caption">Photos</Typography>
               </Box>
             </Box>
@@ -583,7 +603,9 @@ export default function Dashboard({ onNavigate, onStartWorkout }) {
 
         {/* Details Section */}
         <Grid size={{ xs: 12, lg: 7 }}>
-          <Box sx={{ mb: 2 }}>
+          <Box
+            sx={{ mb: 2, height: 48, display: 'flex', alignItems: 'center' }}
+          >
             <Typography variant="h5" fontWeight="bold">
               Details for{' '}
               {new Date(activeDateStr + 'T00:00:00').toLocaleDateString(
