@@ -49,6 +49,17 @@ export default function App() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
+        // Check if returning from Google OAuth
+        const params = new URLSearchParams(window.location.search);
+        const authStatus = params.get('auth');
+        const token = params.get('token');
+
+        if (authStatus === 'success' && token) {
+          // Verify token with backend to establish session
+          await axios.post('/api/auth/google/verify', { access_token: token });
+          window.history.replaceState({}, document.title, '/');
+        }
+
         const response = await axios.get('/api/auth/status');
         if (response.data.authenticated) {
           setIsAuthenticated(true);
