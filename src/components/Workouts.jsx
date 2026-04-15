@@ -23,6 +23,7 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
+  DialogContentText,
   DialogActions,
   LinearProgress,
   Tooltip,
@@ -790,6 +791,7 @@ function ActiveWorkout({ day, onSaved, onCancel }) {
   const [sessionNotes, setSessionNotes] = useState('');
   const [progressEx, setProgressEx] = useState(null); // { id, name }
   const [suggestions, setSuggestions] = useState({});
+  const [templateUpdate, setTemplateUpdate] = useState(null);
 
   useEffect(() => {
     axios
@@ -893,9 +895,51 @@ function ActiveWorkout({ day, onSaved, onCancel }) {
         notes: sessionNotes || null,
         logs: flatLogs,
       });
-      onSaved();
+
+      // After saving session, check for differences to suggest template update
+      const newDayExercises = day.exercises.map((ex) => {
+        const sessionSets = logs[ex.exercise_id].filter(
+          (s) => s.weight !== '' || s.reps !== ''
+        );
+        if (sessionSets.length === 0) return ex;
+
+        const firstSet = sessionSets[0];
+        return {
+          ...ex,
+          sets: sessionSets.length,
+          weight: firstSet.weight !== '' ? firstSet.weight : ex.weight,
+          reps: firstSet.reps !== '' ? firstSet.reps : ex.reps,
+        };
+      });
+
+      const hasChanges = newDayExercises.some((ex, i) => {
+        const orig = day.exercises[i];
+        return (
+          parseInt(ex.sets) !== parseInt(orig.sets) ||
+          parseFloat(ex.weight) !== parseFloat(orig.weight) ||
+          parseInt(ex.reps) !== parseInt(orig.reps)
+        );
+      });
+
+      if (hasChanges) {
+        setTemplateUpdate(newDayExercises);
+      } else {
+        onSaved();
+      }
     } catch {
       alert('Failed to save session');
+    }
+  };
+
+  const handleUpdateTemplate = async () => {
+    try {
+      await axios.put(`/api/workouts/days/${day.id}/exercises`, {
+        exercises: templateUpdate,
+      });
+      onSaved();
+    } catch {
+      alert('Failed to update template');
+      onSaved(); // Still close session even if template update failed
     }
   };
 
@@ -1174,6 +1218,59 @@ function ActiveWorkout({ day, onSaved, onCancel }) {
           onClose={() => setProgressEx(null)}
         />
       )}
+
+      <Dialog
+        open={!!templateUpdate}
+        onClose={() => onSaved()}
+        aria-labelledby="template-update-dialog-title"
+      >
+        <DialogTitle id="template-update-dialog-title">
+          Update Workout Template?
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            You made changes to the number of sets, weights, or reps during this
+            session. Would you like to save these changes as the new template
+            for <strong>{day.name}</strong>?
+          </DialogContentText>
+          <Box sx={{ mt: 2 }}>
+            {templateUpdate &&
+              templateUpdate
+                .filter((ex, i) => {
+                  const orig = day.exercises[i];
+                  return (
+                    parseInt(ex.sets) !== parseInt(orig.sets) ||
+                    parseFloat(ex.weight) !== parseFloat(orig.weight) ||
+                    parseInt(ex.reps) !== parseInt(orig.reps)
+                  );
+                })
+                .map((ex, i) => {
+                  const orig = day.exercises.find(
+                    (o) => o.exercise_id === ex.exercise_id
+                  );
+                  return (
+                    <Typography key={i} variant="body2" color="text.secondary">
+                      • <strong>{ex.name}</strong>: {orig.sets}×{orig.weight}kg
+                      → {ex.sets}×{ex.weight}kg
+                    </Typography>
+                  );
+                })}
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => onSaved()} color="inherit">
+            No, keep original
+          </Button>
+          <Button
+            onClick={handleUpdateTemplate}
+            color="primary"
+            variant="contained"
+            autoFocus
+          >
+            Yes, update template
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
