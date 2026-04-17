@@ -104,6 +104,9 @@ const getGradientColor = (value, best, worst) => {
 
 const sleepStatsOptions = [
   { label: 'RHR (bpm)', value: 'rhr', color: '#ff7300', better: 'lower' },
+  { label: 'HRV (ms)', value: 'hrv', color: '#8884d8', better: 'higher' },
+  { label: 'Score', value: 'sleep_score', color: '#82ca9d', better: 'higher' },
+  { label: 'Temp Dev (°C)', value: 'temp_dev', color: '#ff4444', better: 'lower' },
   {
     label: 'Deep Sleep (mins)',
     value: 'deep_sleep_minutes',
@@ -139,6 +142,9 @@ export default function Sleep() {
     bedtime: '',
     wake_time: '',
     rhr: '',
+    hrv: '',
+    sleep_score: '',
+    temp_dev: '',
     deep_sleep_minutes: '',
     rem_sleep_minutes: '',
     light_minutes: '',
@@ -146,6 +152,7 @@ export default function Sleep() {
   });
 
   const [syncing, setSyncing] = useState(false);
+  const [syncingUh, setSyncingUh] = useState(false);
   const [syncDays, setSyncDays] = useState(30);
   const [snackbar, setSnackbar] = useState({
     open: false,
@@ -180,6 +187,9 @@ export default function Sleep() {
 
     const keys = [
       'rhr',
+      'hrv',
+      'sleep_score',
+      'temp_dev',
       'deep_sleep_minutes',
       'rem_sleep_minutes',
       'awake_minutes',
@@ -225,7 +235,8 @@ export default function Sleep() {
       key === 'rhr' ||
       key === 'awake_minutes' ||
       key === 'bedtime_dev' ||
-      key === 'wake_dev'
+      key === 'wake_dev' ||
+      key === 'temp_dev'
     ) {
       return getGradientColor(value, range.min, range.max); // Lower is better
     }
@@ -251,6 +262,9 @@ export default function Sleep() {
         bedtime: '',
         wake_time: '',
         rhr: '',
+        hrv: '',
+        sleep_score: '',
+        temp_dev: '',
         deep_sleep_minutes: '',
         rem_sleep_minutes: '',
         light_minutes: '',
@@ -295,6 +309,22 @@ export default function Sleep() {
       }
     } finally {
       setSyncing(false);
+    }
+  };
+
+  const handleUltrahumanSync = async () => {
+    setSyncingUh(true);
+    try {
+      const response = await axios.get(
+        `/api/ultrahuman/sync?days=${syncDays}`
+      );
+      showSnackbar(response.data.message, 'success');
+      fetchHistory();
+    } catch (err) {
+      const msg = err.response?.data?.error || 'Sync failed. Please try again.';
+      showSnackbar(msg, 'error');
+    } finally {
+      setSyncingUh(false);
     }
   };
 
@@ -352,10 +382,27 @@ export default function Sleep() {
                   syncing ? <CircularProgress size={16} /> : <SyncIcon />
                 }
                 onClick={handleGoogleFitSync}
-                disabled={syncing}
+                disabled={syncing || syncingUh}
                 sx={{ whiteSpace: 'nowrap' }}
               >
                 {syncing ? 'Syncing…' : 'Sync Google Fit'}
+              </Button>
+            </span>
+          </Tooltip>
+
+          <Tooltip title="Sync with Ultrahuman">
+            <span>
+              <Button
+                variant="outlined"
+                color="secondary"
+                startIcon={
+                  syncingUh ? <CircularProgress size={16} /> : <SyncIcon />
+                }
+                onClick={handleUltrahumanSync}
+                disabled={syncing || syncingUh}
+                sx={{ whiteSpace: 'nowrap' }}
+              >
+                {syncingUh ? 'Syncing…' : 'Sync Ultrahuman'}
               </Button>
             </span>
           </Tooltip>
@@ -423,6 +470,40 @@ export default function Sleep() {
                     name="rhr"
                     type="number"
                     value={formData.rhr}
+                    onChange={handleChange}
+                    sx={{ mb: 2 }}
+                  />
+                </Grid>
+                <Grid size={6}>
+                  <TextField
+                    fullWidth
+                    label="HRV (ms)"
+                    name="hrv"
+                    type="number"
+                    value={formData.hrv}
+                    onChange={handleChange}
+                    sx={{ mb: 2 }}
+                  />
+                </Grid>
+                <Grid size={6}>
+                  <TextField
+                    fullWidth
+                    label="Sleep Score"
+                    name="sleep_score"
+                    type="number"
+                    value={formData.sleep_score}
+                    onChange={handleChange}
+                    sx={{ mb: 2 }}
+                  />
+                </Grid>
+                <Grid size={6}>
+                  <TextField
+                    fullWidth
+                    label="Temp Dev (°C)"
+                    name="temp_dev"
+                    type="number"
+                    inputProps={{ step: '0.01' }}
+                    value={formData.temp_dev}
                     onChange={handleChange}
                     sx={{ mb: 2 }}
                   />
@@ -688,14 +769,17 @@ export default function Sleep() {
               <TableCell align="right">Bedtime</TableCell>
               <TableCell align="right">Wake Up</TableCell>
               <TableCell align="right">RHR</TableCell>
+              <TableCell align="right">HRV</TableCell>
+              <TableCell align="right">Score</TableCell>
+              <TableCell align="right">Temp</TableCell>
               <TableCell align="right">Deep</TableCell>
               <TableCell align="right">REM</TableCell>
               <TableCell align="right">Light</TableCell>
               <TableCell align="right">Awake</TableCell>
               <TableCell align="right">Actions</TableCell>
             </TableRow>
-          </TableHead>
-          <TableBody>
+            </TableHead>
+            <TableBody>
             {[...history].reverse().map((row) => (
               <TableRow key={row.id} hover>
                 <TableCell sx={{ fontWeight: 'bold' }}>{row.date}</TableCell>
@@ -735,6 +819,37 @@ export default function Sleep() {
                 <TableCell
                   align="right"
                   sx={{
+                    color: getDynamicColor('hrv', row.hrv),
+                    fontWeight: 'bold',
+                  }}
+                >
+                  {row.hrv || '-'}
+                </TableCell>
+                <TableCell
+                  align="right"
+                  sx={{
+                    color: getDynamicColor('sleep_score', row.sleep_score),
+                    fontWeight: 'bold',
+                  }}
+                >
+                  {row.sleep_score || '-'}
+                </TableCell>
+                <TableCell
+                  align="right"
+                  sx={{
+                    color: getDynamicColor('temp_dev', row.temp_dev),
+                    fontWeight: 'bold',
+                  }}
+                >
+                  {row.temp_dev != null
+                    ? row.temp_dev > 0
+                      ? `+${row.temp_dev}`
+                      : row.temp_dev
+                    : '-'}
+                </TableCell>
+                <TableCell
+                  align="right"
+                  sx={{
                     color: getDynamicColor(
                       'deep_sleep_minutes',
                       row.deep_sleep_minutes
@@ -743,8 +858,7 @@ export default function Sleep() {
                   }}
                 >
                   {minutesToHm(row.deep_sleep_minutes)}
-                </TableCell>
-                <TableCell
+                </TableCell>                <TableCell
                   align="right"
                   sx={{
                     color: getDynamicColor(

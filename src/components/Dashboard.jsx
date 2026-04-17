@@ -232,6 +232,7 @@ export default function Dashboard({ onNavigate, onStartWorkout }) {
   });
   const [plans, setPlans] = useState([]);
   const [syncing, setSyncing] = useState(false);
+  const [syncingUh, setSyncingUh] = useState(false);
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: '',
@@ -298,6 +299,20 @@ export default function Dashboard({ onNavigate, onStartWorkout }) {
 
   useEffect(() => {
     fetchData();
+    // Auto-sync last 2 days on dashboard load to keep it fresh
+    const autoSync = async () => {
+      try {
+        const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        await Promise.allSettled([
+          axios.post(`/api/fit/sync-sleep?days=2&tz=${encodeURIComponent(tz)}`),
+          axios.get(`/api/ultrahuman/sync?days=2`),
+        ]);
+        fetchData();
+      } catch (e) {
+        console.warn('Dashboard auto-sync failed:', e);
+      }
+    };
+    autoSync();
   }, [fetchData]);
 
   const activeData = useMemo(() => {
@@ -348,6 +363,19 @@ export default function Dashboard({ onNavigate, onStartWorkout }) {
       showSnackbar('Failed to sync sleep', 'error');
     } finally {
       setSyncing(false);
+    }
+  };
+
+  const handleSyncUltrahuman = async () => {
+    setSyncingUh(true);
+    try {
+      await axios.get(`/api/ultrahuman/sync?days=7`);
+      showSnackbar('Ultrahuman synced successfully');
+      fetchData();
+    } catch (error) {
+      showSnackbar('Failed to sync Ultrahuman', 'error');
+    } finally {
+      setSyncingUh(false);
     }
   };
 
@@ -618,6 +646,13 @@ export default function Dashboard({ onNavigate, onStartWorkout }) {
                 }
               )}
             </Typography>
+            {activeData.sleep?.recovery_index && (
+              <Chip
+                label={`Recovery Index: ${activeData.sleep.recovery_index}`}
+                color={activeData.sleep.recovery_index > 80 ? "success" : activeData.sleep.recovery_index > 50 ? "warning" : "error"}
+                sx={{ ml: 2, fontWeight: 'bold' }}
+              />
+            )}
           </Box>
 
           <Grid container spacing={2}>
@@ -681,7 +716,7 @@ export default function Dashboard({ onNavigate, onStartWorkout }) {
                       </Grid>
                       <Divider sx={{ mb: 1 }} />
                       <Grid container spacing={1}>
-                        <Grid size={4}>
+                        <Grid size={3}>
                           <Typography variant="caption" color="text.secondary">
                             Deep
                           </Typography>
@@ -689,7 +724,7 @@ export default function Dashboard({ onNavigate, onStartWorkout }) {
                             {minutesToHm(activeData.sleep.deep_sleep_minutes)}
                           </Typography>
                         </Grid>
-                        <Grid size={4}>
+                        <Grid size={3}>
                           <Typography variant="caption" color="text.secondary">
                             REM
                           </Typography>
@@ -697,13 +732,32 @@ export default function Dashboard({ onNavigate, onStartWorkout }) {
                             {minutesToHm(activeData.sleep.rem_sleep_minutes)}
                           </Typography>
                         </Grid>
-                        <Grid size={4}>
+                        <Grid size={3}>
                           <Typography variant="caption" color="text.secondary">
                             RHR
                           </Typography>
                           <Typography variant="body2">
-                            {activeData.sleep.rhr || '-'} bpm
+                            {activeData.sleep.rhr || '-'}
                           </Typography>
+                        </Grid>
+                        <Grid size={3}>
+                          <Typography variant="caption" color="text.secondary">
+                            HRV
+                          </Typography>
+                          <Typography variant="body2">
+                            {activeData.sleep.hrv || '-'}
+                          </Typography>
+                        </Grid>
+                        <Grid size={12}>
+                          {activeData.sleep.sleep_score && (
+                            <Chip
+                              label={`Sleep Score: ${activeData.sleep.sleep_score}`}
+                              size="small"
+                              color="primary"
+                              variant="outlined"
+                              sx={{ mt: 1 }}
+                            />
+                          )}
                         </Grid>
                       </Grid>
                     </Box>
@@ -714,18 +768,31 @@ export default function Dashboard({ onNavigate, onStartWorkout }) {
                   )}
                 </CardContent>
                 <Box sx={{ flexGrow: 1 }} />
-                <CardActions>
+                <CardActions sx={{ gap: 1 }}>
                   <Button
                     startIcon={
                       syncing ? <CircularProgress size={16} /> : <SyncIcon />
                     }
                     onClick={handleSyncSleep}
-                    disabled={syncing}
+                    disabled={syncing || syncingUh}
                     fullWidth
                     size="small"
                     variant="outlined"
                   >
-                    Sync Fit
+                    Fit
+                  </Button>
+                  <Button
+                    startIcon={
+                      syncingUh ? <CircularProgress size={16} /> : <SyncIcon />
+                    }
+                    onClick={handleSyncUltrahuman}
+                    disabled={syncing || syncingUh}
+                    fullWidth
+                    size="small"
+                    variant="outlined"
+                    color="secondary"
+                  >
+                    Ultra
                   </Button>
                 </CardActions>
               </Card>

@@ -117,7 +117,7 @@ describe('Dashboard Component', () => {
     api.post.mockResolvedValue({ data: { message: 'Synced' } });
     render(<Dashboard onNavigate={() => {}} />);
 
-    const syncButton = await screen.findByRole('button', { name: /Sync Fit/i });
+    const syncButton = await screen.findByRole('button', { name: /Fit/i });
     fireEvent.click(syncButton);
 
     await waitFor(() => {

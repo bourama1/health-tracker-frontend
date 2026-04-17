@@ -29,6 +29,7 @@ import { addTrendline, calcDomain, formatDateTick } from '../utils/chartUtils';
 const measurementOptions = [
   { label: 'Bodyweight (kg)', value: 'bodyweight' },
   { label: 'Body Fat (%)', value: 'body_fat' },
+  { label: 'VO2 Max', value: 'vo2_max' },
   { label: 'Chest (cm)', value: 'chest' },
   { label: 'Waist (cm)', value: 'waist' },
   { label: 'Biceps (cm)', value: 'biceps' },
@@ -46,6 +47,7 @@ export default function Measurements() {
     date: new Date().toISOString().split('T')[0],
     bodyweight: '',
     body_fat: '',
+    vo2_max: '',
     chest: '',
     waist: '',
     biceps: '',
@@ -88,6 +90,7 @@ export default function Measurements() {
         ...prev,
         bodyweight: '',
         body_fat: '',
+        vo2_max: '',
         chest: '',
         waist: '',
         biceps: '',
@@ -187,6 +190,18 @@ export default function Measurements() {
                     type="number"
                     inputProps={{ step: '0.1' }}
                     value={formData.body_fat}
+                    onChange={handleInputChange}
+                    sx={{ mb: 2 }}
+                  />
+                </Grid>
+                <Grid size={6}>
+                  <TextField
+                    fullWidth
+                    label="VO2 Max"
+                    name="vo2_max"
+                    type="number"
+                    inputProps={{ step: '0.1' }}
+                    value={formData.vo2_max}
                     onChange={handleInputChange}
                     sx={{ mb: 2 }}
                   />
