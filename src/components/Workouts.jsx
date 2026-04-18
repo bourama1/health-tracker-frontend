@@ -108,15 +108,19 @@ function ProgressDialog({ exerciseId, exerciseName, open, onClose }) {
   }, [open, exerciseId]);
 
   const weightData = addTrendline(
-    data.map((d) => ({
-      date: d.date,
-      value: d.max_weight,
-      had_pr: d.had_pr,
-      reps: d.max_reps,
-    }))
+    data
+      .map((d) => ({
+        date: d.date,
+        value: d.max_weight,
+        had_pr: d.had_pr,
+        reps: d.max_reps,
+      }))
+      .filter((d) => d.value !== null && d.value !== undefined && d.value !== '')
   );
   const volumeData = addTrendline(
-    data.map((d) => ({ date: d.date, value: Math.round(d.total_volume) }))
+    data
+      .map((d) => ({ date: d.date, value: Math.round(d.total_volume) }))
+      .filter((d) => d.value !== null && d.value !== undefined && d.value !== '')
   );
   const weightDomain = calcDomain(weightData);
   const volumeDomain = calcDomain(volumeData);

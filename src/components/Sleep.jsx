@@ -329,10 +329,12 @@ export default function Sleep() {
   };
 
   const chartData = addTrendline(
-    history.map((h) => ({
-      date: h.date,
-      value: h[selectedStat],
-    }))
+    history
+      .map((h) => ({
+        date: h.date,
+        value: h[selectedStat],
+      }))
+      .filter((d) => d.value !== null && d.value !== undefined && d.value !== '')
   );
 
   const yDomain = calcDomain(chartData);
@@ -656,7 +658,9 @@ export default function Sleep() {
         <Grid container spacing={2}>
           {sleepStatsOptions.map((opt) => {
             const sparkData = addTrendline(
-              history.map((h) => ({ date: h.date, value: h[opt.value] }))
+              history
+                .map((h) => ({ date: h.date, value: h[opt.value] }))
+                .filter((d) => d.value !== null && d.value !== undefined && d.value !== '')
             );
             const hasData = sparkData.some(
               (d) => d.value != null && d.value !== ''
@@ -680,12 +684,21 @@ export default function Sleep() {
                 : improving
                   ? 'success.main'
                   : 'error.main';
+            const isDuration = opt.value.includes('minutes');
             const latestDisplay =
               opt.value === 'rhr'
                 ? `${latest} bpm`
-                : latest != null
-                  ? minutesToHm(Math.round(latest))
-                  : '-';
+                : opt.value === 'temp_dev'
+                  ? `${latest > 0 ? '+' : ''}${latest}°C`
+                  : isDuration
+                    ? minutesToHm(Math.round(latest))
+                    : latest;
+
+            const deltaDisplay = 
+              opt.value === 'rhr' || opt.value === 'hrv' || opt.value === 'sleep_score' || opt.value === 'temp_dev'
+                ? delta.toFixed(opt.value === 'temp_dev' ? 2 : 1)
+                : minutesToHm(Math.abs(Math.round(delta)));
+
             return (
               <Grid key={opt.value} size={{ xs: 12, sm: 6, md: 'grow' }}>
                 <Paper
@@ -718,9 +731,7 @@ export default function Sleep() {
                         sx={{ ml: 1, flexShrink: 0 }}
                       >
                         {delta > 0 ? '+' : ''}
-                        {opt.value === 'rhr'
-                          ? delta.toFixed(1)
-                          : minutesToHm(Math.abs(Math.round(delta)))}
+                        {deltaDisplay}
                       </Typography>
                     )}
                   </Box>

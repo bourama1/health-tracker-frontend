@@ -116,6 +116,7 @@ export default function Measurements() {
         date: m.date,
         value: m[selectedMeasurement],
       }))
+      .filter((d) => d.value !== null && d.value !== undefined && d.value !== '')
   );
 
   const yDomain = calcDomain(chartData);
@@ -396,6 +397,7 @@ export default function Measurements() {
                 .slice()
                 .reverse()
                 .map((m) => ({ date: m.date, value: m[opt.value] }))
+                .filter((d) => d.value !== null && d.value !== undefined && d.value !== '')
             );
             const hasData = sparkData.some(
               (d) => d.value != null && d.value !== ''
