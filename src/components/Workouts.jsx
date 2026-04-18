@@ -805,6 +805,41 @@ function ActiveWorkout({ day, onSaved, onCancel }) {
   }, [day.id]);
 
   useEffect(() => {
+    const fetchLastPerformance = async () => {
+      const exerciseIds = day.exercises.map((ex) => ex.exercise_id).join(',');
+      try {
+        const response = await axios.get(
+          `/api/workouts/sessions/last-performance?exercise_ids=${exerciseIds}`
+        );
+        const lastPerf = response.data;
+        
+        setLogs((prev) => {
+          const newLogs = { ...prev };
+          day.exercises.forEach((ex) => {
+            const perf = lastPerf[ex.exercise_id];
+            if (perf && perf.length > 0) {
+              // Use the number of sets from the last performance, 
+              // or the template if it has more sets
+              const numSets = Math.max(perf.length, ex.sets || 0);
+              newLogs[ex.exercise_id] = Array.from({ length: numSets }, (_, i) => ({
+                weight: perf[i]?.weight ?? (ex.weight || ''),
+                reps: perf[i]?.reps ?? (ex.reps || ''),
+                rpe: perf[i]?.rpe ?? '',
+                notes: '',
+                completed: false,
+              }));
+            }
+          });
+          return newLogs;
+        });
+      } catch (err) {
+        console.error('Error fetching last performance:', err);
+      }
+    };
+    fetchLastPerformance();
+  }, [day.exercises]);
+
+  useEffect(() => {
     day.exercises.forEach((ex) => {
       const targetReps = ex.reps_max || ex.reps_min || ex.reps || 8;
       const targetRPE = ex.target_rpe || 8;
