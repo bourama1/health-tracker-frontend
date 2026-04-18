@@ -590,7 +590,7 @@ export default function Dashboard({ onNavigate, onStartWorkout }) {
                     </Typography>
 
                     {d.activity?.steps > 0 && (
-                      <Box sx={{ lineClamp: 1, overflow: 'hidden' }}>
+                      <Box sx={{ lineClamp: 1, overflow: 'hidden', mb: 1 }}>
                         <Typography
                           variant="caption"
                           sx={{
@@ -707,6 +707,13 @@ export default function Dashboard({ onNavigate, onStartWorkout }) {
               <Chip
                 label={`Sleep Score: ${activeData.sleep.sleep_score}`}
                 color={activeData.sleep.sleep_score > 80 ? "success" : activeData.sleep.sleep_score > 60 ? "warning" : "error"}
+                sx={{ ml: 1, fontWeight: 'bold' }}
+              />
+            )}
+            {activeData.activity?.movement_index && (
+              <Chip
+                label={`Movement Index: ${activeData.activity.movement_index}`}
+                color={activeData.activity.movement_index > 80 ? "success" : activeData.activity.movement_index > 60 ? "warning" : "error"}
                 sx={{ ml: 1, fontWeight: 'bold' }}
               />
             )}
