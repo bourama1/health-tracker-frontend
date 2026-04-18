@@ -49,3 +49,36 @@ export function formatDateTick(dateStr) {
   const d = new Date(dateStr + 'T00:00:00');
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
+
+/**
+ * Returns a color between Green (120) and Red (0) based on value position in range.
+ * @param {number} value - The actual value
+ * @param {number} best - The 'best' value in history
+ * @param {number} worst - The 'worst' value in history
+ */
+export const getGradientColor = (value, best, worst) => {
+  if (value === null || value === undefined || best === worst || value === '')
+    return 'inherit';
+
+  const val = parseFloat(value);
+  if (isNaN(val)) return 'inherit';
+
+  // Calculate percentage (0 = worst, 1 = best)
+  // Clamp value between best and worst
+  const min = Math.min(best, worst);
+  const max = Math.max(best, worst);
+  const clamped = Math.max(min, Math.min(max, val));
+
+  let pct;
+  if (best > worst) {
+    // Higher is better
+    pct = (clamped - worst) / (best - worst);
+  } else {
+    // Lower is better
+    pct = (worst - clamped) / (worst - best);
+  }
+
+  // HSL: 0 is Red, 120 is Green.
+  const hue = pct * 120;
+  return `hsl(${hue}, 70%, 45%)`;
+};

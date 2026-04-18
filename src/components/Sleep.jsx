@@ -36,7 +36,12 @@ import {
 } from 'recharts';
 
 import axios from '../api';
-import { addTrendline, calcDomain, formatDateTick } from '../utils/chartUtils';
+import {
+  addTrendline,
+  calcDomain,
+  formatDateTick,
+  getGradientColor,
+} from '../utils/chartUtils';
 
 // ─── HELPERS ────────────────────────────────────────────────────────────────
 
@@ -67,37 +72,6 @@ const getTimeDeviation = (timeStr, targetH, targetM) => {
   let diff = Math.abs(actual - target);
   if (diff > 12 * 60) diff = 24 * 60 - diff;
   return diff;
-};
-
-// ─── COLOR LOGIC ────────────────────────────────────────────────────────────
-
-/**
- * Returns a color between Green (120) and Red (0) based on value position in range.
- * @param {number} value - The actual value
- * @param {number} best - The 'best' value in history
- * @param {number} worst - The 'worst' value in history
- */
-const getGradientColor = (value, best, worst) => {
-  if (value === null || value === undefined || best === worst) return 'inherit';
-
-  // Calculate percentage (0 = worst, 1 = best)
-  // Clamp value between best and worst
-  const min = Math.min(best, worst);
-  const max = Math.max(best, worst);
-  const clamped = Math.max(min, Math.min(max, value));
-
-  let pct;
-  if (best > worst) {
-    // Higher is better (e.g. Deep Sleep)
-    pct = (clamped - worst) / (best - worst);
-  } else {
-    // Lower is better (e.g. RHR, Awake, Deviation)
-    pct = (worst - clamped) / (worst - best);
-  }
-
-  // HSL: 0 is Red, 120 is Green.
-  const hue = pct * 120;
-  return `hsl(${hue}, 70%, 45%)`;
 };
 
 // ─── COMPONENT ──────────────────────────────────────────────────────────────

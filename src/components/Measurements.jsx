@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Box,
   Typography,
@@ -12,6 +12,12 @@ import {
   MenuItem,
   CircularProgress,
   Alert,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
 } from '@mui/material';
 import {
   LineChart,
@@ -24,18 +30,23 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import axios from '../api';
-import { addTrendline, calcDomain, formatDateTick } from '../utils/chartUtils';
+import {
+  addTrendline,
+  calcDomain,
+  formatDateTick,
+  getGradientColor,
+} from '../utils/chartUtils';
 
 const measurementOptions = [
-  { label: 'Bodyweight (kg)', value: 'bodyweight' },
-  { label: 'Body Fat (%)', value: 'body_fat' },
-  { label: 'VO2 Max', value: 'vo2_max' },
-  { label: 'Chest (cm)', value: 'chest' },
-  { label: 'Waist (cm)', value: 'waist' },
-  { label: 'Biceps (cm)', value: 'biceps' },
-  { label: 'Forearm (cm)', value: 'forearm' },
-  { label: 'Calf (cm)', value: 'calf' },
-  { label: 'Thigh (cm)', value: 'thigh' },
+  { label: 'Bodyweight (kg)', value: 'bodyweight', better: 'lower' },
+  { label: 'Body Fat (%)', value: 'body_fat', better: 'lower' },
+  { label: 'VO2 Max', value: 'vo2_max', better: 'higher' },
+  { label: 'Chest (cm)', value: 'chest', better: 'lower' },
+  { label: 'Waist (cm)', value: 'waist', better: 'lower' },
+  { label: 'Biceps (cm)', value: 'biceps', better: 'lower' },
+  { label: 'Forearm (cm)', value: 'forearm', better: 'lower' },
+  { label: 'Calf (cm)', value: 'calf', better: 'lower' },
+  { label: 'Thigh (cm)', value: 'thigh', better: 'lower' },
 ];
 
 export default function Measurements() {
@@ -70,6 +81,43 @@ export default function Measurements() {
   useEffect(() => {
     fetchMeasurements();
   }, [fetchMeasurements]);
+
+  // ─── CALCULATE DYNAMIC RANGES ─────────────────────────────────────────────
+  const statsRanges = useMemo(() => {
+    if (measurements.length === 0) return {};
+
+    const keys = measurementOptions.map((opt) => opt.value);
+    const ranges = {};
+
+    keys.forEach((key) => {
+      const values = measurements
+        .map((m) => m[key])
+        .filter((v) => v !== null && v !== '' && v !== undefined)
+        .map((v) => parseFloat(v))
+        .filter((v) => !isNaN(v));
+
+      if (values.length > 0) {
+        ranges[key] = {
+          min: Math.min(...values),
+          max: Math.max(...values),
+        };
+      }
+    });
+
+    return ranges;
+  }, [measurements]);
+
+  const getDynamicColor = (key, value) => {
+    const range = statsRanges[key];
+    if (!range || value === null || value === undefined || value === '')
+      return 'inherit';
+
+    const option = measurementOptions.find((opt) => opt.value === key);
+    if (option?.better === 'lower') {
+      return getGradientColor(value, range.min, range.max);
+    }
+    return getGradientColor(value, range.max, range.min);
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -383,7 +431,10 @@ export default function Measurements() {
                 .slice()
                 .reverse()
                 .map((m) => ({ date: m.date, value: m[opt.value] }))
-                .filter((d) => d.value !== null && d.value !== undefined && d.value !== '')
+                .filter(
+                  (d) =>
+                    d.value !== null && d.value !== undefined && d.value !== ''
+                )
             );
             const hasData = sparkData.some(
               (d) => d.value != null && d.value !== ''
@@ -397,14 +448,15 @@ export default function Measurements() {
             const first = vals[0];
             const delta =
               latest != null && first != null ? latest - first : null;
+            const lowerIsBetter = opt.better === 'lower';
+            const improving =
+              delta !== null && (lowerIsBetter ? delta < 0 : delta > 0);
             const trendColor =
               delta === null
                 ? 'text.secondary'
-                : delta < 0
+                : improving
                   ? 'success.main'
-                  : delta > 0
-                    ? 'error.main'
-                    : 'text.secondary';
+                  : 'error.main';
             return (
               <Grid key={opt.value} size={{ xs: 12, sm: 6, md: 3 }}>
                 <Paper
@@ -481,38 +533,46 @@ export default function Measurements() {
         </Grid>
       </Paper>
 
-      {/* ── History list ── */}
-      <Paper sx={{ p: 2, mt: 3, maxHeight: 600, overflow: 'auto' }}>
-        <Typography variant="h6" gutterBottom>
+      {/* ── History Table ── */}
+      <Paper sx={{ mt: 3, maxHeight: 600, overflow: 'auto' }}>
+        <Typography variant="h6" sx={{ p: 2 }}>
           History
         </Typography>
-        {measurements.map((m) => (
-          <Box
-            key={m.id}
-            sx={{
-              p: 2,
-              mb: 2,
-              border: '1px solid',
-              borderColor: 'divider',
-              borderRadius: 1,
-            }}
-          >
-            <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
-              {m.date}
-            </Typography>
-            <Grid container spacing={1}>
-              {measurementOptions.map((opt) => (
-                <Grid key={opt.value} size={3}>
-                  <Typography variant="caption" color="text.secondary">
-                    {opt.label.split(' ')[0]}:
-                  </Typography>
-                  <Typography variant="body2">{m[opt.value] || '-'}</Typography>
-                </Grid>
+        <TableContainer>
+          <Table size="small" stickyHeader>
+            <TableHead>
+              <TableRow>
+                <TableCell>Date</TableCell>
+                {measurementOptions.map((opt) => (
+                  <TableCell key={opt.value} align="right">
+                    {opt.label.split(' ')[0]}
+                  </TableCell>
+                ))}
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {measurements.map((m) => (
+                <TableRow key={m.id} hover>
+                  <TableCell sx={{ fontWeight: 'bold' }}>{m.date}</TableCell>
+                  {measurementOptions.map((opt) => (
+                    <TableCell
+                      key={opt.value}
+                      align="right"
+                      sx={{
+                        color: getDynamicColor(opt.value, m[opt.value]),
+                        fontWeight: 'bold',
+                      }}
+                    >
+                      {m[opt.value] || '-'}
+                    </TableCell>
+                  ))}
+                </TableRow>
               ))}
-            </Grid>
-          </Box>
-        ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
       </Paper>
     </Box>
   );
 }
+
