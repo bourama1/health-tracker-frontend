@@ -47,7 +47,6 @@ export default function Measurements() {
     date: new Date().toISOString().split('T')[0],
     bodyweight: '',
     body_fat: '',
-    vo2_max: '',
     chest: '',
     waist: '',
     biceps: '',
@@ -90,7 +89,6 @@ export default function Measurements() {
         ...prev,
         bodyweight: '',
         body_fat: '',
-        vo2_max: '',
         chest: '',
         waist: '',
         biceps: '',
@@ -191,18 +189,6 @@ export default function Measurements() {
                     type="number"
                     inputProps={{ step: '0.1' }}
                     value={formData.body_fat}
-                    onChange={handleInputChange}
-                    sx={{ mb: 2 }}
-                  />
-                </Grid>
-                <Grid size={6}>
-                  <TextField
-                    fullWidth
-                    label="VO2 Max"
-                    name="vo2_max"
-                    type="number"
-                    inputProps={{ step: '0.1' }}
-                    value={formData.vo2_max}
                     onChange={handleInputChange}
                     sx={{ mb: 2 }}
                   />
