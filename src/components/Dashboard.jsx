@@ -379,6 +379,33 @@ export default function Dashboard({ onNavigate, onStartWorkout }) {
     }
   };
 
+  const handleOpenMeasurements = () => {
+    if (activeData.measurements) {
+      setMeasurementForm({
+        bodyweight: activeData.measurements.bodyweight || '',
+        body_fat: activeData.measurements.body_fat || '',
+        chest: activeData.measurements.chest || '',
+        waist: activeData.measurements.waist || '',
+        biceps: activeData.measurements.biceps || '',
+        forearm: activeData.measurements.forearm || '',
+        calf: activeData.measurements.calf || '',
+        thigh: activeData.measurements.thigh || '',
+      });
+    } else {
+      setMeasurementForm({
+        bodyweight: '',
+        body_fat: '',
+        chest: '',
+        waist: '',
+        biceps: '',
+        forearm: '',
+        calf: '',
+        thigh: '',
+      });
+    }
+    setOpenMeasurements(true);
+  };
+
   const handleMeasurementSubmit = async () => {
     try {
       await axios.post('/api/measurements', {
@@ -1034,7 +1061,7 @@ export default function Dashboard({ onNavigate, onStartWorkout }) {
                     variant="outlined"
                     size="small"
                     startIcon={<AddIcon />}
-                    onClick={() => setOpenMeasurements(true)}
+                    onClick={handleOpenMeasurements}
                     aria-label={
                       activeData.measurements
                         ? 'Edit measurements'
