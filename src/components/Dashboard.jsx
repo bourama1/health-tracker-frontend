@@ -225,6 +225,7 @@ export default function Dashboard({ onNavigate, onStartWorkout }) {
 
   const [allData, setAllData] = useState({
     sleep: [],
+    activity: [],
     measurements: [],
     sessions: [],
     photoDates: [],
@@ -243,6 +244,7 @@ export default function Dashboard({ onNavigate, onStartWorkout }) {
   const [openMeasurements, setOpenMeasurements] = useState(false);
   const [openPhotos, setOpenPhotos] = useState(false);
   const [openStartWorkout, setOpenStartWorkout] = useState(false);
+  const [openActivity, setOpenActivity] = useState(false);
 
   const [measurementForm, setMeasurementForm] = useState({
     bodyweight: '',
@@ -253,6 +255,12 @@ export default function Dashboard({ onNavigate, onStartWorkout }) {
     forearm: '',
     calf: '',
     thigh: '',
+  });
+
+  const [activityForm, setActivityForm] = useState({
+    steps: '',
+    active_minutes: '',
+    movement_index: '',
   });
 
   const [photoFiles, setPhotoFiles] = useState({
@@ -267,6 +275,7 @@ export default function Dashboard({ onNavigate, onStartWorkout }) {
     try {
       const [
         sleepRes,
+        activityRes,
         measureRes,
         sessionRes,
         planRes,
@@ -274,6 +283,7 @@ export default function Dashboard({ onNavigate, onStartWorkout }) {
         lastTrainedRes,
       ] = await Promise.all([
         axios.get('/api/sleep'),
+        axios.get('/api/activity'),
         axios.get('/api/measurements'),
         axios.get('/api/workouts/sessions?limit=100'),
         axios.get('/api/workouts/plans'),
@@ -283,6 +293,7 @@ export default function Dashboard({ onNavigate, onStartWorkout }) {
 
       setAllData({
         sleep: sleepRes.data,
+        activity: activityRes.data,
         measurements: measureRes.data,
         sessions: sessionRes.data,
         photoDates: photoRes.data.map((d) => d.date),
@@ -317,6 +328,7 @@ export default function Dashboard({ onNavigate, onStartWorkout }) {
 
   const activeData = useMemo(() => {
     const sleep = allData.sleep.find((s) => s.date === activeDateStr);
+    const activity = allData.activity.find((a) => a.date === activeDateStr);
     const measurements = allData.measurements.find(
       (m) => m.date === activeDateStr
     );
@@ -340,6 +352,7 @@ export default function Dashboard({ onNavigate, onStartWorkout }) {
 
     return {
       sleep,
+      activity,
       measurements,
       workout,
       hasPhotos,
@@ -404,6 +417,37 @@ export default function Dashboard({ onNavigate, onStartWorkout }) {
       });
     }
     setOpenMeasurements(true);
+  };
+
+  const handleOpenActivity = () => {
+    if (activeData.activity) {
+      setActivityForm({
+        steps: activeData.activity.steps || '',
+        active_minutes: activeData.activity.active_minutes || '',
+        movement_index: activeData.activity.movement_index || '',
+      });
+    } else {
+      setActivityForm({
+        steps: '',
+        active_minutes: '',
+        movement_index: '',
+      });
+    }
+    setOpenActivity(true);
+  };
+
+  const handleActivitySubmit = async () => {
+    try {
+      await axios.post('/api/activity', {
+        ...activityForm,
+        date: activeDateStr,
+      });
+      showSnackbar('Activity saved');
+      setOpenActivity(false);
+      fetchData();
+    } catch (error) {
+      showSnackbar('Failed to save activity', 'error');
+    }
   };
 
   const handleMeasurementSubmit = async () => {
@@ -687,6 +731,13 @@ export default function Dashboard({ onNavigate, onStartWorkout }) {
                 sx={{ ml: 1, fontWeight: 'bold' }}
               />
             )}
+            {activeData.activity?.movement_index && (
+              <Chip
+                label={`Movement Index: ${activeData.activity.movement_index}`}
+                color={activeData.activity.movement_index > 80 ? "success" : activeData.activity.movement_index > 60 ? "warning" : "error"}
+                sx={{ ml: 1, fontWeight: 'bold' }}
+              />
+            )}
           </Box>
 
           <Grid container spacing={2}>
@@ -961,6 +1012,71 @@ export default function Dashboard({ onNavigate, onStartWorkout }) {
               </Card>
             </Grid>
 
+            {/* Activity Card */}
+            <Grid size={{ xs: 12, md: 6 }}>
+              <Card
+                sx={{
+                  height: '100%',
+                  display: 'flex',
+                  flexDirection: 'column',
+                }}
+              >
+                <CardContent>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                    <FitnessCenterIcon color="primary" sx={{ mr: 1 }} />
+                    <Typography variant="h6">Activity</Typography>
+                    {activeData.activity && (
+                      <CheckCircleIcon color="success" sx={{ ml: 'auto' }} />
+                    )}
+                  </Box>
+                  {activeData.activity ? (
+                    <Grid container spacing={1}>
+                      <Grid item xs={6}>
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          display="block"
+                        >
+                          Steps
+                        </Typography>
+                        <Typography variant="body2" fontWeight="bold">
+                          {activeData.activity.steps || '0'}
+                        </Typography>
+                      </Grid>
+                      <Grid item xs={6}>
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          display="block"
+                        >
+                          Active Minutes
+                        </Typography>
+                        <Typography variant="body2" fontWeight="bold">
+                          {activeData.activity.active_minutes || '0'}m
+                        </Typography>
+                      </Grid>
+                    </Grid>
+                  ) : (
+                    <Typography variant="body2" color="text.secondary">
+                      No activity recorded.
+                    </Typography>
+                  )}
+                </CardContent>
+                <Box sx={{ flexGrow: 1 }} />
+                <CardActions>
+                  <Button
+                    fullWidth
+                    variant="outlined"
+                    size="small"
+                    startIcon={<AddIcon />}
+                    onClick={handleOpenActivity}
+                  >
+                    {activeData.activity ? 'Edit' : 'Add'}
+                  </Button>
+                </CardActions>
+              </Card>
+            </Grid>
+
             {/* Measurements Card */}
             <Grid size={{ xs: 12, md: 6 }}>
               <Card
@@ -1115,6 +1231,64 @@ export default function Dashboard({ onNavigate, onStartWorkout }) {
       </Grid>
 
       {/* DIALOGS (Measurements, Photos, Start Workout) - Keep same as before but ensure date use activeDateStr */}
+      <Dialog
+        open={openActivity}
+        onClose={() => setOpenActivity(false)}
+        fullWidth
+        maxWidth="xs"
+      >
+        <DialogTitle>Activity — {activeDateStr}</DialogTitle>
+        <DialogContent>
+          <Grid container spacing={2} sx={{ mt: 1 }}>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Steps"
+                type="number"
+                value={activityForm.steps}
+                onChange={(e) =>
+                  setActivityForm({ ...activityForm, steps: e.target.value })
+                }
+              />
+            </Grid>
+            <Grid item xs={6}>
+              <TextField
+                fullWidth
+                label="Active Minutes"
+                type="number"
+                value={activityForm.active_minutes}
+                onChange={(e) =>
+                  setActivityForm({
+                    ...activityForm,
+                    active_minutes: e.target.value,
+                  })
+                }
+              />
+            </Grid>
+            <Grid item xs={6}>
+              <TextField
+                fullWidth
+                label="Movement Index"
+                type="number"
+                value={activityForm.movement_index}
+                onChange={(e) =>
+                  setActivityForm({
+                    ...activityForm,
+                    movement_index: e.target.value,
+                  })
+                }
+              />
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenActivity(false)}>Cancel</Button>
+          <Button onClick={handleActivitySubmit} variant="contained">
+            Save
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       <Dialog
         open={openMeasurements}
         onClose={() => setOpenMeasurements(false)}
