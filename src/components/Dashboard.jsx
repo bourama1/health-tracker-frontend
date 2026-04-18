@@ -680,6 +680,13 @@ export default function Dashboard({ onNavigate, onStartWorkout }) {
                 sx={{ ml: 2, fontWeight: 'bold' }}
               />
             )}
+            {activeData.sleep?.sleep_score && (
+              <Chip
+                label={`Sleep Score: ${activeData.sleep.sleep_score}`}
+                color={activeData.sleep.sleep_score > 80 ? "success" : activeData.sleep.sleep_score > 60 ? "warning" : "error"}
+                sx={{ ml: 1, fontWeight: 'bold' }}
+              />
+            )}
           </Box>
 
           <Grid container spacing={2}>
@@ -774,17 +781,6 @@ export default function Dashboard({ onNavigate, onStartWorkout }) {
                           <Typography variant="body2">
                             {activeData.sleep.hrv || '-'}
                           </Typography>
-                        </Grid>
-                        <Grid size={12}>
-                          {activeData.sleep.sleep_score && (
-                            <Chip
-                              label={`Sleep Score: ${activeData.sleep.sleep_score}`}
-                              size="small"
-                              color="primary"
-                              variant="outlined"
-                              sx={{ mt: 1 }}
-                            />
-                          )}
                         </Grid>
                       </Grid>
                     </Box>
