@@ -509,6 +509,7 @@ export default function Dashboard({ onNavigate, onStartWorkout }) {
         hasMeasurements: allData.measurements.some((m) => m.date === dateStr),
         hasWorkout: allData.sessions.some((s) => s.date === dateStr),
         hasPhotos: allData.photoDates.includes(dateStr),
+        activity: allData.activity.find((a) => a.date === dateStr),
       });
     }
     return days;
@@ -620,19 +621,50 @@ export default function Dashboard({ onNavigate, onStartWorkout }) {
                         fontWeight: isToday ? 'bold' : 'normal',
                         color: isToday ? 'primary.main' : 'text.primary',
                         fontSize: '0.9rem',
-                        mb: 1,
+                        mb: 0.5,
                       }}
                     >
                       {d.day}
                     </Typography>
 
+                    {d.activity && (
+                      <Box sx={{ lineClamp: 1, overflow: 'hidden' }}>
+                        {d.activity.steps > 0 && (
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              fontSize: '0.65rem',
+                              color: 'text.secondary',
+                              display: 'block',
+                              lineHeight: 1,
+                            }}
+                          >
+                            {d.activity.steps.toLocaleString()}
+                          </Typography>
+                        )}
+                        {d.activity.active_minutes > 0 && (
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              fontSize: '0.65rem',
+                              color: 'primary.main',
+                              display: 'block',
+                              lineHeight: 1,
+                            }}
+                          >
+                            {d.activity.active_minutes}m
+                          </Typography>
+                        )}
+                      </Box>
+                    )}
+
                     <Box
                       sx={{
                         display: 'grid',
                         gridTemplateColumns: 'repeat(2, 1fr)',
-                        gap: 0.8,
+                        gap: 0.5,
                         mt: 'auto',
-                        mb: 1,
+                        mb: 0.5,
                       }}
                     >
                       {d.hasSleep ? (
