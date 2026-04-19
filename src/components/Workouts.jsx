@@ -115,12 +115,16 @@ function ProgressDialog({ exerciseId, exerciseName, open, onClose }) {
         had_pr: d.had_pr,
         reps: d.max_reps,
       }))
-      .filter((d) => d.value !== null && d.value !== undefined && d.value !== '')
+      .filter(
+        (d) => d.value !== null && d.value !== undefined && d.value !== ''
+      )
   );
   const volumeData = addTrendline(
     data
       .map((d) => ({ date: d.date, value: Math.round(d.total_volume) }))
-      .filter((d) => d.value !== null && d.value !== undefined && d.value !== '')
+      .filter(
+        (d) => d.value !== null && d.value !== undefined && d.value !== ''
+      )
   );
   const weightDomain = calcDomain(weightData);
   const volumeDomain = calcDomain(volumeData);
@@ -812,22 +816,25 @@ function ActiveWorkout({ day, onSaved, onCancel }) {
           `/api/workouts/sessions/last-performance?exercise_ids=${exerciseIds}`
         );
         const lastPerf = response.data;
-        
+
         setLogs((prev) => {
           const newLogs = { ...prev };
           day.exercises.forEach((ex) => {
             const perf = lastPerf[ex.exercise_id];
             if (perf && perf.length > 0) {
-              // Use the number of sets from the last performance, 
+              // Use the number of sets from the last performance,
               // or the template if it has more sets
               const numSets = Math.max(perf.length, ex.sets || 0);
-              newLogs[ex.exercise_id] = Array.from({ length: numSets }, (_, i) => ({
-                weight: perf[i]?.weight ?? (ex.weight || ''),
-                reps: perf[i]?.reps ?? (ex.reps || ''),
-                rpe: perf[i]?.rpe ?? '',
-                notes: '',
-                completed: false,
-              }));
+              newLogs[ex.exercise_id] = Array.from(
+                { length: numSets },
+                (_, i) => ({
+                  weight: perf[i]?.weight ?? (ex.weight || ''),
+                  reps: perf[i]?.reps ?? (ex.reps || ''),
+                  rpe: perf[i]?.rpe ?? '',
+                  notes: '',
+                  completed: false,
+                })
+              );
             }
           });
           return newLogs;

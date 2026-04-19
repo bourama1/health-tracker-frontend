@@ -412,6 +412,61 @@ export default function Dashboard({ onNavigate, onStartWorkout }) {
     setOpenMeasurements(true);
   };
 
+  const isMeasurementDirty = () => {
+    const initial = activeData.measurements
+      ? {
+          bodyweight: activeData.measurements.bodyweight || '',
+          body_fat: activeData.measurements.body_fat || '',
+          chest: activeData.measurements.chest || '',
+          waist: activeData.measurements.waist || '',
+          biceps: activeData.measurements.biceps || '',
+          forearm: activeData.measurements.forearm || '',
+          calf: activeData.measurements.calf || '',
+          thigh: activeData.measurements.thigh || '',
+        }
+      : {
+          bodyweight: '',
+          body_fat: '',
+          chest: '',
+          waist: '',
+          biceps: '',
+          forearm: '',
+          calf: '',
+          thigh: '',
+        };
+    return Object.keys(measurementForm).some(
+      (key) => String(measurementForm[key]) !== String(initial[key])
+    );
+  };
+
+  const handleCloseMeasurements = (event, reason) => {
+    if (reason === 'backdropClick' || reason === 'escapeKeyDown') {
+      if (isMeasurementDirty()) {
+        if (
+          !window.confirm(
+            'You have unsaved measurement data. Are you sure you want to discard changes?'
+          )
+        ) {
+          return;
+        }
+      }
+    }
+    setOpenMeasurements(false);
+  };
+
+  const handleCancelMeasurements = () => {
+    if (isMeasurementDirty()) {
+      if (
+        !window.confirm(
+          'You have unsaved measurement data. Are you sure you want to discard changes?'
+        )
+      ) {
+        return;
+      }
+    }
+    setOpenMeasurements(false);
+  };
+
   const handleMeasurementSubmit = async () => {
     try {
       await axios.post('/api/measurements', {
@@ -424,6 +479,38 @@ export default function Dashboard({ onNavigate, onStartWorkout }) {
     } catch (error) {
       showSnackbar('Failed to save measurements', 'error');
     }
+  };
+
+  const isPhotosDirty = () => {
+    return photoFiles.front || photoFiles.side || photoFiles.back;
+  };
+
+  const handleClosePhotos = (event, reason) => {
+    if (reason === 'backdropClick' || reason === 'escapeKeyDown') {
+      if (isPhotosDirty()) {
+        if (
+          !window.confirm(
+            'You have selected photos that are not uploaded. Are you sure you want to discard them?'
+          )
+        ) {
+          return;
+        }
+      }
+    }
+    setOpenPhotos(false);
+  };
+
+  const handleCancelPhotos = () => {
+    if (isPhotosDirty()) {
+      if (
+        !window.confirm(
+          'You have selected photos that are not uploaded. Are you sure you want to discard them?'
+        )
+      ) {
+        return;
+      }
+    }
+    setOpenPhotos(false);
   };
 
   const handlePhotoUpload = async () => {
@@ -699,21 +786,39 @@ export default function Dashboard({ onNavigate, onStartWorkout }) {
             {activeData.sleep?.recovery_index && (
               <Chip
                 label={`Recovery Index: ${activeData.sleep.recovery_index}`}
-                color={activeData.sleep.recovery_index > 80 ? "success" : activeData.sleep.recovery_index > 50 ? "warning" : "error"}
+                color={
+                  activeData.sleep.recovery_index > 80
+                    ? 'success'
+                    : activeData.sleep.recovery_index > 50
+                      ? 'warning'
+                      : 'error'
+                }
                 sx={{ ml: 2, fontWeight: 'bold' }}
               />
             )}
             {activeData.sleep?.sleep_score && (
               <Chip
                 label={`Sleep Score: ${activeData.sleep.sleep_score}`}
-                color={activeData.sleep.sleep_score > 80 ? "success" : activeData.sleep.sleep_score > 60 ? "warning" : "error"}
+                color={
+                  activeData.sleep.sleep_score > 80
+                    ? 'success'
+                    : activeData.sleep.sleep_score > 60
+                      ? 'warning'
+                      : 'error'
+                }
                 sx={{ ml: 1, fontWeight: 'bold' }}
               />
             )}
             {activeData.activity?.movement_index && (
               <Chip
                 label={`Movement Index: ${activeData.activity.movement_index}`}
-                color={activeData.activity.movement_index > 80 ? "success" : activeData.activity.movement_index > 60 ? "warning" : "error"}
+                color={
+                  activeData.activity.movement_index > 80
+                    ? 'success'
+                    : activeData.activity.movement_index > 60
+                      ? 'warning'
+                      : 'error'
+                }
                 sx={{ ml: 1, fontWeight: 'bold' }}
               />
             )}
@@ -1147,7 +1252,7 @@ export default function Dashboard({ onNavigate, onStartWorkout }) {
       {/* DIALOGS (Measurements, Photos, Start Workout) - Keep same as before but ensure date use activeDateStr */}
       <Dialog
         open={openMeasurements}
-        onClose={() => setOpenMeasurements(false)}
+        onClose={handleCloseMeasurements}
         fullWidth
         maxWidth="xs"
       >
@@ -1184,7 +1289,7 @@ export default function Dashboard({ onNavigate, onStartWorkout }) {
           </Grid>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setOpenMeasurements(false)}>Cancel</Button>
+          <Button onClick={handleCancelMeasurements}>Cancel</Button>
           <Button onClick={handleMeasurementSubmit} variant="contained">
             Save
           </Button>
@@ -1193,7 +1298,7 @@ export default function Dashboard({ onNavigate, onStartWorkout }) {
 
       <Dialog
         open={openPhotos}
-        onClose={() => setOpenPhotos(false)}
+        onClose={handleClosePhotos}
         fullWidth
         maxWidth="xs"
       >
@@ -1220,7 +1325,7 @@ export default function Dashboard({ onNavigate, onStartWorkout }) {
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setOpenPhotos(false)}>Cancel</Button>
+          <Button onClick={handleCancelPhotos}>Cancel</Button>
           <Button
             onClick={handlePhotoUpload}
             variant="contained"

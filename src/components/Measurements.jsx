@@ -43,10 +43,10 @@ const measurementOptions = [
   { label: 'VO2 Max', value: 'vo2_max', better: 'higher' },
   { label: 'Chest (cm)', value: 'chest', better: 'lower' },
   { label: 'Waist (cm)', value: 'waist', better: 'lower' },
-  { label: 'Biceps (cm)', value: 'biceps', better: 'lower' },
-  { label: 'Forearm (cm)', value: 'forearm', better: 'lower' },
-  { label: 'Calf (cm)', value: 'calf', better: 'lower' },
-  { label: 'Thigh (cm)', value: 'thigh', better: 'lower' },
+  { label: 'Biceps (cm)', value: 'biceps', better: 'higher' },
+  { label: 'Forearm (cm)', value: 'forearm', better: 'higher' },
+  { label: 'Calf (cm)', value: 'calf', better: 'higher' },
+  { label: 'Thigh (cm)', value: 'thigh', better: 'higher' },
 ];
 
 export default function Measurements() {
@@ -162,7 +162,9 @@ export default function Measurements() {
         date: m.date,
         value: m[selectedMeasurement],
       }))
-      .filter((d) => d.value !== null && d.value !== undefined && d.value !== '')
+      .filter(
+        (d) => d.value !== null && d.value !== undefined && d.value !== ''
+      )
   );
 
   const yDomain = calcDomain(chartData);
@@ -575,4 +577,3 @@ export default function Measurements() {
     </Box>
   );
 }
-

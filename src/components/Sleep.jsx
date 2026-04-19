@@ -80,7 +80,12 @@ const sleepStatsOptions = [
   { label: 'RHR (bpm)', value: 'rhr', color: '#ff7300', better: 'lower' },
   { label: 'HRV (ms)', value: 'hrv', color: '#8884d8', better: 'higher' },
   { label: 'Score', value: 'sleep_score', color: '#82ca9d', better: 'higher' },
-  { label: 'Temp Dev (°C)', value: 'temp_dev', color: '#ff4444', better: 'lower' },
+  {
+    label: 'Temp Dev (°C)',
+    value: 'temp_dev',
+    color: '#ff4444',
+    better: 'lower',
+  },
   {
     label: 'Deep Sleep (mins)',
     value: 'deep_sleep_minutes',
@@ -289,9 +294,7 @@ export default function Sleep() {
   const handleUltrahumanSync = async () => {
     setSyncingUh(true);
     try {
-      const response = await axios.get(
-        `/api/ultrahuman/sync?days=${syncDays}`
-      );
+      const response = await axios.get(`/api/ultrahuman/sync?days=${syncDays}`);
       showSnackbar(response.data.message, 'success');
       fetchHistory();
     } catch (err) {
@@ -308,7 +311,9 @@ export default function Sleep() {
         date: h.date,
         value: h[selectedStat],
       }))
-      .filter((d) => d.value !== null && d.value !== undefined && d.value !== '')
+      .filter(
+        (d) => d.value !== null && d.value !== undefined && d.value !== ''
+      )
   );
 
   const yDomain = calcDomain(chartData);
@@ -634,7 +639,10 @@ export default function Sleep() {
             const sparkData = addTrendline(
               history
                 .map((h) => ({ date: h.date, value: h[opt.value] }))
-                .filter((d) => d.value !== null && d.value !== undefined && d.value !== '')
+                .filter(
+                  (d) =>
+                    d.value !== null && d.value !== undefined && d.value !== ''
+                )
             );
             const hasData = sparkData.some(
               (d) => d.value != null && d.value !== ''
@@ -668,8 +676,11 @@ export default function Sleep() {
                     ? minutesToHm(Math.round(latest))
                     : latest;
 
-            const deltaDisplay = 
-              opt.value === 'rhr' || opt.value === 'hrv' || opt.value === 'sleep_score' || opt.value === 'temp_dev'
+            const deltaDisplay =
+              opt.value === 'rhr' ||
+              opt.value === 'hrv' ||
+              opt.value === 'sleep_score' ||
+              opt.value === 'temp_dev'
                 ? delta.toFixed(opt.value === 'temp_dev' ? 2 : 1)
                 : minutesToHm(Math.abs(Math.round(delta)));
 
@@ -763,8 +774,8 @@ export default function Sleep() {
               <TableCell align="right">Awake</TableCell>
               <TableCell align="right">Actions</TableCell>
             </TableRow>
-            </TableHead>
-            <TableBody>
+          </TableHead>
+          <TableBody>
             {[...history].reverse().map((row) => (
               <TableRow key={row.id} hover>
                 <TableCell sx={{ fontWeight: 'bold' }}>{row.date}</TableCell>
@@ -843,7 +854,8 @@ export default function Sleep() {
                   }}
                 >
                   {minutesToHm(row.deep_sleep_minutes)}
-                </TableCell>                <TableCell
+                </TableCell>{' '}
+                <TableCell
                   align="right"
                   sx={{
                     color: getDynamicColor(
