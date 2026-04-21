@@ -804,7 +804,12 @@ function ActiveWorkout({ day, onSaved, onCancel }) {
   useEffect(() => {
     axios
       .get(`/api/workouts/sessions/last-for-day/${day.id}`)
-      .then((r) => setPrevSession(r.data))
+      .then((r) => {
+        setPrevSession(r.data);
+        if (r.data?.notes) {
+          setSessionNotes(r.data.notes);
+        }
+      })
       .catch(() => {});
   }, [day.id]);
 
@@ -831,7 +836,7 @@ function ActiveWorkout({ day, onSaved, onCancel }) {
                   weight: perf[i]?.weight ?? (ex.weight || ''),
                   reps: perf[i]?.reps ?? (ex.reps || ''),
                   rpe: perf[i]?.rpe ?? '',
-                  notes: '',
+                  notes: perf[i]?.notes ?? '',
                   completed: false,
                 })
               );
