@@ -25,7 +25,6 @@ import {
   useTheme,
   alpha,
 } from '@mui/material';
-import SyncIcon from '@mui/icons-material/Sync';
 import AddIcon from '@mui/icons-material/Add';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
@@ -35,7 +34,6 @@ import BedtimeIcon from '@mui/icons-material/Bedtime';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
-import DirectionsRunIcon from '@mui/icons-material/DirectionsRun';
 import Body from '../vendor/body-highlighter';
 import axios from '../api';
 import { BODY_MAP_MAPPING } from '../constants/muscles';
