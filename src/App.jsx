@@ -45,6 +45,7 @@ export default function App() {
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [user, setUser] = useState(null);
   const [activeWorkoutDay, setActiveWorkoutDay] = useState(null);
+  const [activePhotoDate, setActivePhotoDate] = useState(null);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -87,6 +88,7 @@ export default function App() {
       await axios.post('/api/auth/logout');
       setIsAuthenticated(false);
       setUser(null);
+      window.history.replaceState({}, document.title, '/');
       window.location.reload();
     } catch (error) {
       console.error('Logout failed:', error);
@@ -107,12 +109,19 @@ export default function App() {
     setMode((prevMode) => (prevMode === 'light' ? 'dark' : 'light'));
   };
 
+  const handleNavigate = (tab, params = {}) => {
+    if (tab === 'Photos' && params.date) {
+      setActivePhotoDate(params.date);
+    }
+    setActiveTab(tab);
+  };
+
   const renderContent = () => {
     switch (activeTab) {
       case 'Dashboard':
         return (
           <Dashboard
-            onNavigate={setActiveTab}
+            onNavigate={handleNavigate}
             onStartWorkout={(day) => {
               setActiveWorkoutDay(day);
               setActiveTab('Workouts');
@@ -129,7 +138,12 @@ export default function App() {
       case 'Measurements':
         return <Measurements />;
       case 'Photos':
-        return <Photos />;
+        return (
+          <Photos
+            initialDate={activePhotoDate}
+            onDateChange={setActivePhotoDate}
+          />
+        );
       case 'Sleep':
         return <Sleep />;
       default:

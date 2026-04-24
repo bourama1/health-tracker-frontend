@@ -17,7 +17,7 @@ import axios from '../api';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
-export default function Photos() {
+export default function Photos({ initialDate, onDateChange }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [dates, setDates] = useState([]);
@@ -29,6 +29,15 @@ export default function Photos() {
     new Date().toISOString().split('T')[0]
   );
   const [isUploading, setIsUploading] = useState(false);
+
+  // Set initial date from props if provided
+  useEffect(() => {
+    if (initialDate) {
+      setSelectedDate1(initialDate);
+      // Clear it in parent after consuming to avoid loops
+      if (onDateChange) onDateChange(null);
+    }
+  }, [initialDate, onDateChange]);
 
   // Selection state for Cloudinary
   const [selectedFiles, setSelectedFiles] = useState({

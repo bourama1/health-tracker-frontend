@@ -23,9 +23,11 @@ import {
   ToggleButtonGroup,
   ToggleButton,
   useTheme,
+  alpha,
 } from '@mui/material';
 import SyncIcon from '@mui/icons-material/Sync';
 import AddIcon from '@mui/icons-material/Add';
+import VisibilityIcon from '@mui/icons-material/Visibility';
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 import MonitorWeightIcon from '@mui/icons-material/MonitorWeight';
 import PhotoCameraIcon from '@mui/icons-material/PhotoCamera';
@@ -33,6 +35,7 @@ import BedtimeIcon from '@mui/icons-material/Bedtime';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import DirectionsRunIcon from '@mui/icons-material/DirectionsRun';
 import Body from '../vendor/body-highlighter';
 import axios from '../api';
 import { BODY_MAP_MAPPING } from '../constants/muscles';
@@ -98,7 +101,15 @@ function MuscleHighlight({ exercises, sessionLogs }) {
   if (data.length === 0) return null;
 
   return (
-    <Box sx={{ mt: 2, textAlign: 'center' }}>
+    <Box
+      sx={{
+        mt: 2,
+        textAlign: 'center',
+        flex: 1,
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
       <Typography variant="subtitle2" color="text.secondary" gutterBottom>
         Muscles Worked Intensity
       </Typography>
@@ -128,12 +139,25 @@ function MuscleHighlight({ exercises, sessionLogs }) {
           Back
         </ToggleButton>
       </ToggleButtonGroup>
-      <Box sx={{ width: 140, height: 200, mx: 'auto' }}>
+      <Box
+        sx={{
+          width: '100%',
+          flex: 1,
+          minHeight: 200,
+          mx: 'auto',
+          display: 'flex',
+          justifyContent: 'center',
+        }}
+      >
         <Body
           side={view}
           data={data}
-          colors={['#e3f2fd', '#90caf9', '#42a5f5', '#1e88e5', '#1565c0']}
-          scale={0.5}
+          colors={
+            theme.palette.mode === 'dark'
+              ? ['#1a237e', '#0d47a1', '#1565c0', '#1e88e5', '#42a5f5']
+              : ['#e3f2fd', '#90caf9', '#42a5f5', '#1e88e5', '#1565c0']
+          }
+          scale={0.9}
           theme={theme.palette.mode}
         />
       </Box>
@@ -216,12 +240,23 @@ function MuscleReadiness({ day, lastTrainedMuscles }) {
   );
 }
 
-export default function Dashboard({ onNavigate, onStartWorkout }) {
+const toDateString = (date) => {
+  const d = new Date(date);
+  const year = d.getFullYear();
+  const month = (d.getMonth() + 1).toString().padStart(2, '0');
+  const day = d.getDate().toString().padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+export default function Dashboard({
+  onNavigate,
+  onStartWorkout,
+  today = new Date(),
+}) {
+  const theme = useTheme();
   const [loading, setLoading] = useState(true);
-  const [activeDateStr, setActiveDateStr] = useState(
-    new Date().toLocaleDateString('en-CA')
-  );
-  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [activeDateStr, setActiveDateStr] = useState(toDateString(today));
+  const [currentMonth, setCurrentMonth] = useState(new Date(today));
 
   const [allData, setAllData] = useState({
     sleep: [],
@@ -248,6 +283,7 @@ export default function Dashboard({ onNavigate, onStartWorkout }) {
   const [measurementForm, setMeasurementForm] = useState({
     bodyweight: '',
     body_fat: '',
+    vo2_max: '',
     chest: '',
     waist: '',
     biceps: '',
@@ -303,7 +339,6 @@ export default function Dashboard({ onNavigate, onStartWorkout }) {
 
   useEffect(() => {
     fetchData();
-    // Auto-sync last 2 days on dashboard load to keep it fresh
     const autoSync = async () => {
       try {
         const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -328,7 +363,6 @@ export default function Dashboard({ onNavigate, onStartWorkout }) {
     const workout = allData.sessions.find((s) => s.date === activeDateStr);
     const hasPhotos = allData.photoDates.includes(activeDateStr);
 
-    // Identify scheduled workout for this day
     const dateObj = new Date(activeDateStr + 'T00:00:00');
     const dayName = DAYS_OF_WEEK[dateObj.getDay()];
     let scheduledWorkout = null;
@@ -390,6 +424,7 @@ export default function Dashboard({ onNavigate, onStartWorkout }) {
       setMeasurementForm({
         bodyweight: activeData.measurements.bodyweight || '',
         body_fat: activeData.measurements.body_fat || '',
+        vo2_max: activeData.measurements.vo2_max || '',
         chest: activeData.measurements.chest || '',
         waist: activeData.measurements.waist || '',
         biceps: activeData.measurements.biceps || '',
@@ -401,6 +436,7 @@ export default function Dashboard({ onNavigate, onStartWorkout }) {
       setMeasurementForm({
         bodyweight: '',
         body_fat: '',
+        vo2_max: '',
         chest: '',
         waist: '',
         biceps: '',
@@ -417,6 +453,7 @@ export default function Dashboard({ onNavigate, onStartWorkout }) {
       ? {
           bodyweight: activeData.measurements.bodyweight || '',
           body_fat: activeData.measurements.body_fat || '',
+          vo2_max: activeData.measurements.vo2_max || '',
           chest: activeData.measurements.chest || '',
           waist: activeData.measurements.waist || '',
           biceps: activeData.measurements.biceps || '',
@@ -427,6 +464,7 @@ export default function Dashboard({ onNavigate, onStartWorkout }) {
       : {
           bodyweight: '',
           body_fat: '',
+          vo2_max: '',
           chest: '',
           waist: '',
           biceps: '',
@@ -442,13 +480,7 @@ export default function Dashboard({ onNavigate, onStartWorkout }) {
   const handleCloseMeasurements = (event, reason) => {
     if (reason === 'backdropClick' || reason === 'escapeKeyDown') {
       if (isMeasurementDirty()) {
-        if (
-          !window.confirm(
-            'You have unsaved measurement data. Are you sure you want to discard changes?'
-          )
-        ) {
-          return;
-        }
+        if (!window.confirm('Discard unsaved changes?')) return;
       }
     }
     setOpenMeasurements(false);
@@ -456,13 +488,7 @@ export default function Dashboard({ onNavigate, onStartWorkout }) {
 
   const handleCancelMeasurements = () => {
     if (isMeasurementDirty()) {
-      if (
-        !window.confirm(
-          'You have unsaved measurement data. Are you sure you want to discard changes?'
-        )
-      ) {
-        return;
-      }
+      if (!window.confirm('Discard unsaved changes?')) return;
     }
     setOpenMeasurements(false);
   };
@@ -488,13 +514,7 @@ export default function Dashboard({ onNavigate, onStartWorkout }) {
   const handleClosePhotos = (event, reason) => {
     if (reason === 'backdropClick' || reason === 'escapeKeyDown') {
       if (isPhotosDirty()) {
-        if (
-          !window.confirm(
-            'You have selected photos that are not uploaded. Are you sure you want to discard them?'
-          )
-        ) {
-          return;
-        }
+        if (!window.confirm('Discard un-uploaded photos?')) return;
       }
     }
     setOpenPhotos(false);
@@ -502,13 +522,7 @@ export default function Dashboard({ onNavigate, onStartWorkout }) {
 
   const handleCancelPhotos = () => {
     if (isPhotosDirty()) {
-      if (
-        !window.confirm(
-          'You have selected photos that are not uploaded. Are you sure you want to discard them?'
-        )
-      ) {
-        return;
-      }
+      if (!window.confirm('Discard un-uploaded photos?')) return;
     }
     setOpenPhotos(false);
   };
@@ -544,11 +558,9 @@ export default function Dashboard({ onNavigate, onStartWorkout }) {
     const daysInMonth = new Date(year, month + 1, 0).getDate();
 
     const days = [];
-    // Padding for previous month
     for (let i = 0; i < firstDay; i++) {
       days.push(null);
     }
-    // Days of current month
     for (let i = 1; i <= daysInMonth; i++) {
       const dateStr = `${year}-${(month + 1).toString().padStart(2, '0')}-${i.toString().padStart(2, '0')}`;
       days.push({
@@ -578,17 +590,37 @@ export default function Dashboard({ onNavigate, onStartWorkout }) {
     );
   }
 
+  const cardStyle = {
+    height: '100%',
+    width: '100%',
+    display: 'flex',
+    flexDirection: 'column',
+    transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
+    '&:hover': {
+      transform: 'translateY(-4px)',
+      boxShadow: theme.shadows[8],
+    },
+    borderRadius: 2,
+    bgcolor:
+      theme.palette.mode === 'dark'
+        ? alpha(theme.palette.background.paper, 0.8)
+        : 'background.paper',
+    boxSizing: 'border-box',
+  };
+
   return (
-    <Box>
-      <Grid container spacing={3}>
+    <Box sx={{ flexGrow: 1 }}>
+      <Grid container spacing={3} sx={{ alignItems: 'stretch' }}>
         {/* Calendar Section */}
-        <Grid size={{ xs: 12, lg: 5 }}>
+        <Grid size={{ xs: 12, lg: 5 }} sx={{ display: 'flex' }}>
           <Paper
             sx={{
               p: 2,
               height: '100%',
               display: 'flex',
               flexDirection: 'column',
+              borderRadius: 2,
+              flex: 1,
             }}
           >
             <Box
@@ -652,16 +684,21 @@ export default function Dashboard({ onNavigate, onStartWorkout }) {
                       height: '100%',
                       minHeight: 85,
                       cursor: 'pointer',
-                      border: '1px solid',
-                      borderColor: isActive ? 'primary.main' : 'divider',
+                      border: '2px solid',
+                      borderColor: isActive ? 'primary.main' : 'transparent',
                       bgcolor: isActive
-                        ? 'action.selected'
-                        : 'background.paper',
-                      '&:hover': { bgcolor: 'action.hover' },
+                        ? alpha(theme.palette.primary.main, 0.1)
+                        : theme.palette.mode === 'dark'
+                          ? alpha(theme.palette.background.paper, 0.4)
+                          : 'background.paper',
+                      '&:hover': {
+                        bgcolor: alpha(theme.palette.primary.main, 0.05),
+                      },
                       display: 'flex',
                       flexDirection: 'column',
                       alignItems: 'center',
                       position: 'relative',
+                      borderRadius: 1,
                     }}
                   >
                     <Typography
@@ -703,31 +740,31 @@ export default function Dashboard({ onNavigate, onStartWorkout }) {
                     >
                       {d.hasSleep ? (
                         <BedtimeIcon
-                          sx={{ fontSize: 24, color: 'info.main' }}
+                          sx={{ fontSize: 18, color: 'info.main' }}
                         />
                       ) : (
-                        <Box sx={{ width: 24, height: 24 }} />
+                        <Box sx={{ width: 18, height: 18 }} />
                       )}
                       {d.hasWorkout ? (
                         <FitnessCenterIcon
-                          sx={{ fontSize: 24, color: 'error.main' }}
+                          sx={{ fontSize: 18, color: 'error.main' }}
                         />
                       ) : (
-                        <Box sx={{ width: 24, height: 24 }} />
+                        <Box sx={{ width: 18, height: 18 }} />
                       )}
                       {d.hasMeasurements ? (
                         <MonitorWeightIcon
-                          sx={{ fontSize: 24, color: 'success.main' }}
+                          sx={{ fontSize: 18, color: 'success.main' }}
                         />
                       ) : (
-                        <Box sx={{ width: 24, height: 24 }} />
+                        <Box sx={{ width: 18, height: 18 }} />
                       )}
                       {d.hasPhotos ? (
                         <PhotoCameraIcon
-                          sx={{ fontSize: 24, color: 'warning.main' }}
+                          sx={{ fontSize: 18, color: 'warning.main' }}
                         />
                       ) : (
-                        <Box sx={{ width: 24, height: 24 }} />
+                        <Box sx={{ width: 18, height: 18 }} />
                       )}
                     </Box>
                   </Paper>
@@ -745,21 +782,21 @@ export default function Dashboard({ onNavigate, onStartWorkout }) {
               }}
             >
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <BedtimeIcon sx={{ fontSize: 18, color: 'info.main' }} />
+                <BedtimeIcon sx={{ fontSize: 16, color: 'info.main' }} />
                 <Typography variant="caption">Sleep</Typography>
               </Box>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <FitnessCenterIcon sx={{ fontSize: 18, color: 'error.main' }} />
+                <FitnessCenterIcon sx={{ fontSize: 16, color: 'error.main' }} />
                 <Typography variant="caption">Workout</Typography>
               </Box>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <MonitorWeightIcon
-                  sx={{ fontSize: 18, color: 'success.main' }}
+                  sx={{ fontSize: 16, color: 'success.main' }}
                 />
                 <Typography variant="caption">Measures</Typography>
               </Box>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <PhotoCameraIcon sx={{ fontSize: 18, color: 'warning.main' }} />
+                <PhotoCameraIcon sx={{ fontSize: 16, color: 'warning.main' }} />
                 <Typography variant="caption">Photos</Typography>
               </Box>
             </Box>
@@ -767,205 +804,78 @@ export default function Dashboard({ onNavigate, onStartWorkout }) {
         </Grid>
 
         {/* Details Section */}
-        <Grid size={{ xs: 12, lg: 7 }}>
+        <Grid
+          size={{ xs: 12, lg: 7 }}
+          sx={{ display: 'flex', flexDirection: 'column' }}
+        >
           <Box
-            sx={{ mb: 2, height: 48, display: 'flex', alignItems: 'center' }}
+            sx={{
+              mb: 2,
+              display: 'flex',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: 1,
+            }}
           >
             <Typography variant="h5" fontWeight="bold">
-              Details for{' '}
               {new Date(activeDateStr + 'T00:00:00').toLocaleDateString(
                 'en-US',
-                {
-                  weekday: 'long',
-                  month: 'long',
-                  day: 'numeric',
-                  year: 'numeric',
-                }
+                { weekday: 'long', month: 'short', day: 'numeric' }
               )}
             </Typography>
-            {activeData.sleep?.recovery_index && (
-              <Chip
-                label={`Recovery Index: ${activeData.sleep.recovery_index}`}
-                color={
-                  activeData.sleep.recovery_index > 80
-                    ? 'success'
-                    : activeData.sleep.recovery_index > 50
-                      ? 'warning'
-                      : 'error'
-                }
-                sx={{ ml: 2, fontWeight: 'bold' }}
-              />
-            )}
-            {activeData.sleep?.sleep_score && (
-              <Chip
-                label={`Sleep Score: ${activeData.sleep.sleep_score}`}
-                color={
-                  activeData.sleep.sleep_score > 80
-                    ? 'success'
-                    : activeData.sleep.sleep_score > 60
-                      ? 'warning'
-                      : 'error'
-                }
-                sx={{ ml: 1, fontWeight: 'bold' }}
-              />
-            )}
-            {activeData.activity?.movement_index && (
-              <Chip
-                label={`Movement Index: ${activeData.activity.movement_index}`}
-                color={
-                  activeData.activity.movement_index > 80
-                    ? 'success'
-                    : activeData.activity.movement_index > 60
-                      ? 'warning'
-                      : 'error'
-                }
-                sx={{ ml: 1, fontWeight: 'bold' }}
-              />
-            )}
+            <Box sx={{ ml: 'auto', display: 'flex', gap: 1 }}>
+              {activeData.activity?.movement_index != null && (
+                <Chip
+                  label={`Movement: ${activeData.activity.movement_index}`}
+                  size="small"
+                  color={
+                    activeData.activity.movement_index > 80
+                      ? 'success'
+                      : activeData.activity.movement_index > 50
+                        ? 'warning'
+                        : 'error'
+                  }
+                  sx={{ fontWeight: 'bold' }}
+                />
+              )}
+              {activeData.sleep?.recovery_index && (
+                <Chip
+                  label={`Recovery: ${activeData.sleep.recovery_index}`}
+                  size="small"
+                  color={
+                    activeData.sleep.recovery_index > 80
+                      ? 'success'
+                      : activeData.sleep.recovery_index > 50
+                        ? 'warning'
+                        : 'error'
+                  }
+                  sx={{ fontWeight: 'bold' }}
+                />
+              )}
+              {activeData.sleep?.sleep_score && (
+                <Chip
+                  label={`Sleep: ${activeData.sleep.sleep_score}`}
+                  size="small"
+                  color={
+                    activeData.sleep.sleep_score > 80
+                      ? 'success'
+                      : activeData.sleep.sleep_score > 60
+                        ? 'warning'
+                        : 'error'
+                  }
+                  sx={{ fontWeight: 'bold' }}
+                />
+              )}
+            </Box>
           </Box>
 
-          <Grid container spacing={2}>
-            {/* Sleep Card */}
-            <Grid size={{ xs: 12, md: 6 }}>
-              <Card
-                sx={{
-                  height: '100%',
-                  display: 'flex',
-                  flexDirection: 'column',
-                }}
-              >
-                <CardContent>
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                    <BedtimeIcon color="primary" sx={{ mr: 1 }} />
-                    <Typography variant="h6">Sleep</Typography>
-                    {activeData.sleep && (
-                      <CheckCircleIcon color="success" sx={{ ml: 'auto' }} />
-                    )}
-                  </Box>
-                  {activeData.sleep ? (
-                    <Box>
-                      <Grid container spacing={2} sx={{ mb: 2 }}>
-                        <Grid size={4}>
-                          <Typography
-                            variant="subtitle2"
-                            color="text.secondary"
-                          >
-                            Bedtime
-                          </Typography>
-                          <Typography variant="body2" fontWeight="bold">
-                            {activeData.sleep.bedtime || '-'}
-                          </Typography>
-                        </Grid>
-                        <Grid size={4}>
-                          <Typography
-                            variant="subtitle2"
-                            color="text.secondary"
-                          >
-                            Wake Up
-                          </Typography>
-                          <Typography variant="body2" fontWeight="bold">
-                            {activeData.sleep.wake_time || '-'}
-                          </Typography>
-                        </Grid>
-                        <Grid size={4}>
-                          <Typography
-                            variant="subtitle2"
-                            color="text.secondary"
-                          >
-                            Total
-                          </Typography>
-                          <Typography variant="body2" fontWeight="bold">
-                            {minutesToHm(
-                              (activeData.sleep.deep_sleep_minutes || 0) +
-                                (activeData.sleep.rem_sleep_minutes || 0) +
-                                (activeData.sleep.light_minutes || 0)
-                            )}
-                          </Typography>
-                        </Grid>
-                      </Grid>
-                      <Divider sx={{ mb: 1 }} />
-                      <Grid container spacing={1}>
-                        <Grid size={3}>
-                          <Typography variant="caption" color="text.secondary">
-                            Deep
-                          </Typography>
-                          <Typography variant="body2">
-                            {minutesToHm(activeData.sleep.deep_sleep_minutes)}
-                          </Typography>
-                        </Grid>
-                        <Grid size={3}>
-                          <Typography variant="caption" color="text.secondary">
-                            REM
-                          </Typography>
-                          <Typography variant="body2">
-                            {minutesToHm(activeData.sleep.rem_sleep_minutes)}
-                          </Typography>
-                        </Grid>
-                        <Grid size={3}>
-                          <Typography variant="caption" color="text.secondary">
-                            RHR
-                          </Typography>
-                          <Typography variant="body2">
-                            {activeData.sleep.rhr || '-'}
-                          </Typography>
-                        </Grid>
-                        <Grid size={3}>
-                          <Typography variant="caption" color="text.secondary">
-                            HRV
-                          </Typography>
-                          <Typography variant="body2">
-                            {activeData.sleep.hrv || '-'}
-                          </Typography>
-                        </Grid>
-                      </Grid>
-                    </Box>
-                  ) : (
-                    <Typography variant="body2" color="text.secondary">
-                      No sleep data recorded.
-                    </Typography>
-                  )}
-                </CardContent>
-                <Box sx={{ flexGrow: 1 }} />
-                <CardActions sx={{ gap: 1 }}>
-                  <Button
-                    startIcon={
-                      syncing ? <CircularProgress size={16} /> : <SyncIcon />
-                    }
-                    onClick={handleSyncSleep}
-                    disabled={syncing || syncingUh}
-                    fullWidth
-                    size="small"
-                    variant="outlined"
-                  >
-                    Fit
-                  </Button>
-                  <Button
-                    startIcon={
-                      syncingUh ? <CircularProgress size={16} /> : <SyncIcon />
-                    }
-                    onClick={handleSyncUltrahuman}
-                    disabled={syncing || syncingUh}
-                    fullWidth
-                    size="small"
-                    variant="outlined"
-                    color="secondary"
-                  >
-                    Ultra
-                  </Button>
-                </CardActions>
-              </Card>
-            </Grid>
-
-            {/* Workout Card */}
-            <Grid size={{ xs: 12, md: 6 }}>
-              <Card
-                sx={{
-                  height: '100%',
-                  display: 'flex',
-                  flexDirection: 'column',
-                }}
-              >
-                <CardContent>
+          <Grid container spacing={2} sx={{ flex: 1, alignItems: 'stretch' }}>
+            {/* COLUMN 1: WORKOUT */}
+            <Grid size={{ xs: 12, md: 6 }} sx={{ display: 'flex' }}>
+              <Card sx={cardStyle}>
+                <CardContent
+                  sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}
+                >
                   <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                     <FitnessCenterIcon color="primary" sx={{ mr: 1 }} />
                     <Typography variant="h6">Workout</Typography>
@@ -974,7 +884,9 @@ export default function Dashboard({ onNavigate, onStartWorkout }) {
                     )}
                   </Box>
                   {activeData.workout ? (
-                    <Box>
+                    <Box
+                      sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}
+                    >
                       <Typography variant="subtitle1" fontWeight="bold">
                         {activeData.workout.day_name}
                       </Typography>
@@ -986,34 +898,68 @@ export default function Dashboard({ onNavigate, onStartWorkout }) {
                         {activeData.workout.plan_name}
                       </Typography>
                       <Divider sx={{ my: 1 }} />
+
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        sx={{ display: 'block', mb: 0.5 }}
+                      >
+                        Exercises Trained:
+                      </Typography>
+                      <Box
+                        sx={{
+                          display: 'flex',
+                          flexWrap: 'wrap',
+                          gap: 0.5,
+                          mb: 1,
+                        }}
+                      >
+                        {[
+                          ...new Set(
+                            activeData.workout.logs.map((l) => l.exercise_name)
+                          ),
+                        ].map((name, i) => (
+                          <Chip
+                            key={i}
+                            label={name}
+                            size="small"
+                            sx={{ fontSize: '0.65rem' }}
+                          />
+                        ))}
+                      </Box>
+
                       <Grid container spacing={2}>
                         <Grid size={6}>
                           <Typography variant="caption" color="text.secondary">
-                            Exercises
+                            Total Sets
                           </Typography>
-                          <Typography variant="body2">
-                            {
-                              new Set(
-                                activeData.workout.logs.map(
-                                  (l) => l.exercise_id
-                                )
-                              ).size
-                            }
+                          <Typography variant="body2" fontWeight="bold">
+                            {activeData.workout.logs.length}
                           </Typography>
                         </Grid>
                         <Grid size={6}>
                           <Typography variant="caption" color="text.secondary">
-                            Sets
+                            Muscles
                           </Typography>
-                          <Typography variant="body2">
-                            {activeData.workout.logs.length}
+                          <Typography variant="body2" fontWeight="bold">
+                            {
+                              new Set(
+                                activeData.workout.logs.flatMap((l) =>
+                                  (l.primary_muscles || '')
+                                    .split(',')
+                                    .map((m) => m.trim())
+                                )
+                              ).size
+                            }
                           </Typography>
                         </Grid>
                       </Grid>
                       <MuscleHighlight sessionLogs={activeData.workout.logs} />
                     </Box>
                   ) : activeData.scheduledWorkout ? (
-                    <Box>
+                    <Box
+                      sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}
+                    >
                       <Box
                         sx={{
                           display: 'flex',
@@ -1026,7 +972,7 @@ export default function Dashboard({ onNavigate, onStartWorkout }) {
                             {activeData.scheduledWorkout.name}
                           </Typography>
                           <Typography variant="body2" color="primary">
-                            Scheduled for today
+                            Scheduled
                           </Typography>
                         </Box>
                         <MuscleReadiness
@@ -1034,83 +980,237 @@ export default function Dashboard({ onNavigate, onStartWorkout }) {
                           lastTrainedMuscles={allData.lastTrainedMuscles}
                         />
                       </Box>
-                      <Typography variant="caption" color="text.secondary">
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        gutterBottom
+                        display="block"
+                      >
                         {activeData.scheduledWorkout.plan_name}
                       </Typography>
-                      <Box sx={{ mt: 1 }}>
-                        {activeData.scheduledWorkout.exercises
-                          .slice(0, 3)
-                          .map((ex, i) => (
-                            <Chip
-                              key={i}
-                              label={ex.name}
-                              size="small"
-                              sx={{ mr: 0.3, mb: 0.3, fontSize: '0.65rem' }}
-                            />
-                          ))}
+
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        sx={{ display: 'block', mt: 1, mb: 0.5 }}
+                      >
+                        Scheduled Exercises:
+                      </Typography>
+                      <Box
+                        sx={{
+                          display: 'flex',
+                          flexWrap: 'wrap',
+                          gap: 0.5,
+                          mb: 1,
+                        }}
+                      >
+                        {activeData.scheduledWorkout.exercises.map((ex, i) => (
+                          <Chip
+                            key={i}
+                            label={ex.name}
+                            size="small"
+                            sx={{ fontSize: '0.65rem' }}
+                          />
+                        ))}
                       </Box>
+
                       <MuscleHighlight
                         exercises={activeData.scheduledWorkout.exercises}
                       />
                     </Box>
                   ) : (
-                    <Typography variant="body2" color="text.secondary">
-                      No workout scheduled or recorded.
-                    </Typography>
+                    <Box
+                      sx={{
+                        textAlign: 'center',
+                        py: 8,
+                        flex: 1,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <FitnessCenterIcon
+                        sx={{
+                          fontSize: 64,
+                          color: 'action.disabled',
+                          mb: 2,
+                          mx: 'auto',
+                        }}
+                      />
+                      <Typography variant="h6" color="text.secondary">
+                        Rest Day
+                      </Typography>
+                    </Box>
                   )}
                 </CardContent>
-                <Box sx={{ flexGrow: 1 }} />
-                <CardActions>
+                <CardActions sx={{ p: 2, pt: 0 }}>
                   {activeData.workout ? (
                     <Button
                       fullWidth
                       variant="contained"
-                      size="small"
                       onClick={() => onNavigate('Workouts')}
                     >
-                      View Details
+                      View Workout
                     </Button>
                   ) : activeData.scheduledWorkout ? (
                     <Button
                       fullWidth
                       variant="contained"
-                      size="small"
                       color="secondary"
                       onClick={() =>
                         onStartWorkout(activeData.scheduledWorkout)
                       }
                     >
-                      Start Scheduled Workout
+                      Start Scheduled
                     </Button>
                   ) : (
                     <Button
                       fullWidth
                       variant="contained"
-                      size="small"
+                      color="primary"
                       onClick={() => setOpenStartWorkout(true)}
                     >
-                      Start Workout
+                      Log Workout
                     </Button>
                   )}
                 </CardActions>
               </Card>
             </Grid>
 
-            {/* Measurements Card */}
-            <Grid size={{ xs: 12, md: 6 }}>
-              <Card
-                sx={{
-                  height: '100%',
-                  display: 'flex',
-                  flexDirection: 'column',
-                }}
-              >
-                <CardContent>
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                    <MonitorWeightIcon color="primary" sx={{ mr: 1 }} />
-                    <Typography variant="h6">Measurements</Typography>
+            {/* COLUMN 2: REST OF CARDS */}
+            <Grid
+              size={{ xs: 12, md: 6 }}
+              sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}
+            >
+              {/* Sleep Card */}
+              <Card sx={{ ...cardStyle, flex: 1.2 }}>
+                <CardContent sx={{ flex: 1 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                    <BedtimeIcon color="info" sx={{ mr: 1 }} />
+                    <Typography variant="subtitle1" fontWeight="bold">
+                      Sleep Details
+                    </Typography>
+                    {activeData.sleep && (
+                      <CheckCircleIcon
+                        color="success"
+                        sx={{ ml: 'auto', fontSize: 20 }}
+                      />
+                    )}
+                  </Box>
+                  {activeData.sleep ? (
+                    <Grid container spacing={2}>
+                      <Grid size={4}>
+                        <Typography variant="caption" color="text.secondary">
+                          Duration
+                        </Typography>
+                        <Typography variant="body2" fontWeight="bold">
+                          {minutesToHm(
+                            (activeData.sleep.deep_sleep_minutes || 0) +
+                              (activeData.sleep.rem_sleep_minutes || 0) +
+                              (activeData.sleep.light_minutes || 0)
+                          )}
+                        </Typography>
+                      </Grid>
+                      <Grid size={4}>
+                        <Typography variant="caption" color="text.secondary">
+                          RHR
+                        </Typography>
+                        <Typography variant="body2" fontWeight="bold">
+                          {activeData.sleep.rhr || '-'}
+                        </Typography>
+                      </Grid>
+                      <Grid size={4}>
+                        <Typography variant="caption" color="text.secondary">
+                          HRV
+                        </Typography>
+                        <Typography variant="body2" fontWeight="bold">
+                          {activeData.sleep.hrv || '-'}
+                        </Typography>
+                      </Grid>
+                      <Grid size={4}>
+                        <Typography variant="caption" color="text.secondary">
+                          Deep
+                        </Typography>
+                        <Typography variant="body2">
+                          {minutesToHm(activeData.sleep.deep_sleep_minutes)}
+                        </Typography>
+                      </Grid>
+                      <Grid size={4}>
+                        <Typography variant="caption" color="text.secondary">
+                          REM
+                        </Typography>
+                        <Typography variant="body2">
+                          {minutesToHm(activeData.sleep.rem_sleep_minutes)}
+                        </Typography>
+                      </Grid>
+                      <Grid size={4}>
+                        <Typography variant="caption" color="text.secondary">
+                          Light
+                        </Typography>
+                        <Typography variant="body2">
+                          {minutesToHm(activeData.sleep.light_minutes)}
+                        </Typography>
+                      </Grid>
+                      <Grid size={6}>
+                        <Typography variant="caption" color="text.secondary">
+                          Bedtime
+                        </Typography>
+                        <Typography variant="body2">
+                          {activeData.sleep.bedtime || '-'}
+                        </Typography>
+                      </Grid>
+                      <Grid size={6}>
+                        <Typography variant="caption" color="text.secondary">
+                          Wake
+                        </Typography>
+                        <Typography variant="body2">
+                          {activeData.sleep.wake_time || '-'}
+                        </Typography>
+                      </Grid>
+                    </Grid>
+                  ) : (
+                    <Typography variant="body2" color="text.secondary">
+                      No sleep data recorded.
+                    </Typography>
+                  )}
+                </CardContent>
+                <CardActions sx={{ p: 2, pt: 0, gap: 1 }}>
+                  <Button
+                    fullWidth
+                    size="small"
+                    variant="contained"
+                    color="primary"
+                    onClick={handleSyncSleep}
+                    disabled={syncing}
+                  >
+                    Sync Fit
+                  </Button>
+                  <Button
+                    fullWidth
+                    size="small"
+                    variant="contained"
+                    color="secondary"
+                    onClick={handleSyncUltrahuman}
+                    disabled={syncingUh}
+                  >
+                    Sync UH
+                  </Button>
+                </CardActions>
+              </Card>
+
+              {/* Measurements Card */}
+              <Card sx={{ ...cardStyle, flex: 1 }}>
+                <CardContent sx={{ flex: 1 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                    <MonitorWeightIcon color="success" sx={{ mr: 1 }} />
+                    <Typography variant="subtitle1" fontWeight="bold">
+                      Measurements
+                    </Typography>
                     {activeData.measurements && (
-                      <CheckCircleIcon color="success" sx={{ ml: 'auto' }} />
+                      <CheckCircleIcon
+                        color="success"
+                        sx={{ ml: 'auto', fontSize: 20 }}
+                      />
                     )}
                   </Box>
                   {activeData.measurements ? (
@@ -1122,9 +1222,14 @@ export default function Dashboard({ onNavigate, onStartWorkout }) {
                           unit: 'kg',
                         },
                         {
-                          label: 'Body Fat',
+                          label: 'BF%',
                           value: activeData.measurements.body_fat,
                           unit: '%',
+                        },
+                        {
+                          label: 'VO2',
+                          value: activeData.measurements.vo2_max,
+                          unit: '',
                         },
                         {
                           label: 'Chest',
@@ -1157,22 +1262,23 @@ export default function Dashboard({ onNavigate, onStartWorkout }) {
                           unit: 'cm',
                         },
                       ]
-                        .filter(
-                          (m) =>
-                            m.value !== null &&
-                            m.value !== '' &&
-                            m.value !== undefined
-                        )
+                        .filter((m) => m.value)
                         .map((m, idx) => (
-                          <Grid item key={idx} xs={4}>
+                          <Grid key={idx} size={3}>
                             <Typography
                               variant="caption"
                               color="text.secondary"
+                              noWrap
                               display="block"
+                              sx={{ fontSize: '0.65rem' }}
                             >
                               {m.label}
                             </Typography>
-                            <Typography variant="body2" fontWeight="bold">
+                            <Typography
+                              variant="body2"
+                              fontWeight="medium"
+                              sx={{ fontSize: '0.75rem' }}
+                            >
                               {m.value}
                               {m.unit}
                             </Typography>
@@ -1181,67 +1287,67 @@ export default function Dashboard({ onNavigate, onStartWorkout }) {
                     </Grid>
                   ) : (
                     <Typography variant="body2" color="text.secondary">
-                      No measurements recorded.
+                      Not recorded.
                     </Typography>
                   )}
                 </CardContent>
-                <Box sx={{ flexGrow: 1 }} />
-                <CardActions>
+                <CardActions sx={{ p: 2, pt: 0 }}>
                   <Button
                     fullWidth
-                    variant="outlined"
-                    size="small"
+                    variant="contained"
                     startIcon={<AddIcon />}
                     onClick={handleOpenMeasurements}
-                    aria-label={
-                      activeData.measurements
-                        ? 'Edit measurements'
-                        : 'Add measurements'
-                    }
+                    aria-label="Edit measurements"
                   >
                     {activeData.measurements ? 'Edit' : 'Add'}
                   </Button>
                 </CardActions>
               </Card>
-            </Grid>
 
-            {/* Photos Card */}
-            <Grid size={{ xs: 12, md: 6 }}>
-              <Card
-                sx={{
-                  height: '100%',
-                  display: 'flex',
-                  flexDirection: 'column',
-                }}
-              >
-                <CardContent>
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                    <PhotoCameraIcon color="primary" sx={{ mr: 1 }} />
-                    <Typography variant="h6">Photos</Typography>
+              {/* Photos Card */}
+              <Card sx={{ ...cardStyle, flex: 1 }}>
+                <CardContent sx={{ flex: 1 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                    <PhotoCameraIcon color="warning" sx={{ mr: 1 }} />
+                    <Typography variant="subtitle1" fontWeight="bold">
+                      Photos
+                    </Typography>
                     {activeData.hasPhotos && (
-                      <CheckCircleIcon color="success" sx={{ ml: 'auto' }} />
+                      <CheckCircleIcon
+                        color="success"
+                        sx={{ ml: 'auto', fontSize: 20 }}
+                      />
                     )}
                   </Box>
                   <Typography variant="body2" color="text.secondary">
                     {activeData.hasPhotos
-                      ? 'Progress photos uploaded for this day.'
-                      : 'No photos for this day.'}
+                      ? 'Daily progress captured.'
+                      : 'No photos for today.'}
                   </Typography>
                 </CardContent>
-                <Box sx={{ flexGrow: 1 }} />
-                <CardActions>
+                <CardActions sx={{ p: 2, pt: 0, gap: 1 }}>
                   <Button
                     fullWidth
-                    variant="outlined"
-                    size="small"
+                    variant="contained"
                     startIcon={<AddIcon />}
                     onClick={() => setOpenPhotos(true)}
-                    aria-label={
-                      activeData.hasPhotos ? 'Edit photos' : 'Upload photos'
-                    }
+                    aria-label="Edit photos"
                   >
                     {activeData.hasPhotos ? 'Edit' : 'Upload'}
                   </Button>
+                  {activeData.hasPhotos && (
+                    <Button
+                      fullWidth
+                      variant="contained"
+                      color="secondary"
+                      startIcon={<VisibilityIcon />}
+                      onClick={() =>
+                        onNavigate('Photos', { date: activeDateStr })
+                      }
+                    >
+                      View
+                    </Button>
+                  )}
                 </CardActions>
               </Card>
             </Grid>
@@ -1249,38 +1355,37 @@ export default function Dashboard({ onNavigate, onStartWorkout }) {
         </Grid>
       </Grid>
 
-      {/* DIALOGS (Measurements, Photos, Start Workout) - Keep same as before but ensure date use activeDateStr */}
+      {/* DIALOGS */}
       <Dialog
         open={openMeasurements}
         onClose={handleCloseMeasurements}
         fullWidth
         maxWidth="xs"
       >
-        <DialogTitle>Measurements — {activeDateStr}</DialogTitle>
+        <DialogTitle>Update Measurements</DialogTitle>
         <DialogContent>
           <Grid container spacing={2} sx={{ mt: 1 }}>
             {[
-              'bodyweight',
-              'body_fat',
-              'chest',
-              'waist',
-              'biceps',
-              'forearm',
-              'calf',
-              'thigh',
+              { id: 'bodyweight', label: 'Weight (kg)' },
+              { id: 'body_fat', label: 'Body Fat (%)' },
+              { id: 'vo2_max', label: 'VO2 Max' },
+              { id: 'chest', label: 'Chest (cm)' },
+              { id: 'waist', label: 'Waist (cm)' },
+              { id: 'biceps', label: 'Biceps (cm)' },
+              { id: 'forearm', label: 'Forearm (cm)' },
+              { id: 'calf', label: 'Calf (cm)' },
+              { id: 'thigh', label: 'Thigh (cm)' },
             ].map((field) => (
-              <Grid item xs={6} key={field}>
+              <Grid size={6} key={field.id}>
                 <TextField
                   fullWidth
-                  label={field
-                    .replace('_', ' ')
-                    .replace(/\b\w/g, (l) => l.toUpperCase())}
+                  label={field.label}
                   type="number"
-                  value={measurementForm[field]}
+                  value={measurementForm[field.id]}
                   onChange={(e) =>
                     setMeasurementForm({
                       ...measurementForm,
-                      [field]: e.target.value,
+                      [field.id]: e.target.value,
                     })
                   }
                 />
@@ -1302,7 +1407,7 @@ export default function Dashboard({ onNavigate, onStartWorkout }) {
         fullWidth
         maxWidth="xs"
       >
-        <DialogTitle>Upload Photos — {activeDateStr}</DialogTitle>
+        <DialogTitle>Progress Photos</DialogTitle>
         <DialogContent>
           <Box sx={{ mt: 2 }}>
             {['front', 'side', 'back'].map((side) => (
@@ -1345,7 +1450,7 @@ export default function Dashboard({ onNavigate, onStartWorkout }) {
         fullWidth
         maxWidth="sm"
       >
-        <DialogTitle>Select a Workout to Start</DialogTitle>
+        <DialogTitle>Select Workout</DialogTitle>
         <DialogContent>
           {plans.map((plan) => (
             <Box key={plan.id} sx={{ mb: 3 }}>

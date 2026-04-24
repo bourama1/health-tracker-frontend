@@ -18,7 +18,10 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  IconButton,
+  Snackbar,
 } from '@mui/material';
+import DeleteIcon from '@mui/icons-material/Delete';
 import {
   LineChart,
   Line,
@@ -38,15 +41,30 @@ import {
 } from '../utils/chartUtils';
 
 const measurementOptions = [
-  { label: 'Bodyweight (kg)', value: 'bodyweight', better: 'lower' },
-  { label: 'Body Fat (%)', value: 'body_fat', better: 'lower' },
-  { label: 'VO2 Max', value: 'vo2_max', better: 'higher' },
-  { label: 'Chest (cm)', value: 'chest', better: 'lower' },
-  { label: 'Waist (cm)', value: 'waist', better: 'lower' },
-  { label: 'Biceps (cm)', value: 'biceps', better: 'higher' },
-  { label: 'Forearm (cm)', value: 'forearm', better: 'higher' },
-  { label: 'Calf (cm)', value: 'calf', better: 'higher' },
-  { label: 'Thigh (cm)', value: 'thigh', better: 'higher' },
+  {
+    label: 'Bodyweight (kg)',
+    value: 'bodyweight',
+    better: 'lower',
+    color: '#1976d2',
+  },
+  {
+    label: 'Body Fat (%)',
+    value: 'body_fat',
+    better: 'lower',
+    color: '#82ca9d',
+  },
+  { label: 'VO2 Max', value: 'vo2_max', better: 'higher', color: '#ff7300' },
+  { label: 'Chest (cm)', value: 'chest', better: 'higher', color: '#8884d8' },
+  { label: 'Waist (cm)', value: 'waist', better: 'lower', color: '#ff4444' },
+  { label: 'Biceps (cm)', value: 'biceps', better: 'higher', color: '#0088fe' },
+  {
+    label: 'Forearm (cm)',
+    value: 'forearm',
+    better: 'higher',
+    color: '#00c49f',
+  },
+  { label: 'Calf (cm)', value: 'calf', better: 'higher', color: '#ffbb28' },
+  { label: 'Thigh (cm)', value: 'thigh', better: 'higher', color: '#ff8042' },
 ];
 
 export default function Measurements() {
@@ -58,6 +76,7 @@ export default function Measurements() {
     date: new Date().toISOString().split('T')[0],
     bodyweight: '',
     body_fat: '',
+    vo2_max: '',
     chest: '',
     waist: '',
     biceps: '',
@@ -65,6 +84,15 @@ export default function Measurements() {
     calf: '',
     thigh: '',
   });
+
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: '',
+    severity: 'success',
+  });
+
+  const showSnackbar = (message, severity = 'success') =>
+    setSnackbar({ open: true, message, severity });
 
   const fetchMeasurements = useCallback(async () => {
     try {
@@ -137,6 +165,7 @@ export default function Measurements() {
         ...prev,
         bodyweight: '',
         body_fat: '',
+        vo2_max: '',
         chest: '',
         waist: '',
         biceps: '',
@@ -144,9 +173,21 @@ export default function Measurements() {
         calf: '',
         thigh: '',
       }));
+      showSnackbar('Measurement entry saved!');
     } catch (err) {
       console.error('Error saving measurement:', err);
-      alert('Failed to save measurement');
+      showSnackbar('Failed to save measurement', 'error');
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this entry?')) return;
+    try {
+      await axios.delete(`/api/measurements/${id}`);
+      fetchMeasurements();
+      showSnackbar('Entry deleted');
+    } catch (error) {
+      showSnackbar('Failed to delete entry', 'error');
     }
   };
 
@@ -239,6 +280,18 @@ export default function Measurements() {
                     type="number"
                     inputProps={{ step: '0.1' }}
                     value={formData.body_fat}
+                    onChange={handleInputChange}
+                    sx={{ mb: 2 }}
+                  />
+                </Grid>
+                <Grid size={6}>
+                  <TextField
+                    fullWidth
+                    label="VO2 Max"
+                    name="vo2_max"
+                    type="number"
+                    inputProps={{ step: '0.1' }}
+                    value={formData.vo2_max}
                     onChange={handleInputChange}
                     sx={{ mb: 2 }}
                   />
@@ -399,7 +452,11 @@ export default function Measurements() {
                         (opt) => opt.value === selectedMeasurement
                       )?.label
                     }
-                    stroke="#1976d2"
+                    stroke={
+                      measurementOptions.find(
+                        (o) => o.value === selectedMeasurement
+                      )?.color || '#1976d2'
+                    }
                     activeDot={{ r: 8 }}
                     dot={{ r: 3 }}
                     strokeWidth={2}
@@ -460,7 +517,7 @@ export default function Measurements() {
                   ? 'success.main'
                   : 'error.main';
             return (
-              <Grid key={opt.value} size={{ xs: 12, sm: 6, md: 3 }}>
+              <Grid key={opt.value} size={{ xs: 12, sm: 6, md: 'grow' }}>
                 <Paper
                   variant="outlined"
                   onClick={() => setSelectedMeasurement(opt.value)}
@@ -513,7 +570,7 @@ export default function Measurements() {
                         <Line
                           type="monotone"
                           dataKey="value"
-                          stroke="#1976d2"
+                          stroke={opt.color}
                           strokeWidth={1.5}
                           dot={false}
                         />
@@ -536,44 +593,65 @@ export default function Measurements() {
       </Paper>
 
       {/* ── History Table ── */}
-      <Paper sx={{ mt: 3, maxHeight: 600, overflow: 'auto' }}>
-        <Typography variant="h6" sx={{ p: 2 }}>
-          History
-        </Typography>
-        <TableContainer>
-          <Table size="small" stickyHeader>
-            <TableHead>
-              <TableRow>
-                <TableCell>Date</TableCell>
+      <TableContainer component={Paper} sx={{ mt: 3, maxHeight: 600 }}>
+        <Table size="small" stickyHeader>
+          <TableHead>
+            <TableRow>
+              <TableCell>Date</TableCell>
+              {measurementOptions.map((opt) => (
+                <TableCell key={opt.value} align="right">
+                  {opt.label.split(' ')[0]}
+                </TableCell>
+              ))}
+              <TableCell align="right">Actions</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {measurements.map((m) => (
+              <TableRow key={m.id} hover>
+                <TableCell sx={{ fontWeight: 'bold' }}>{m.date}</TableCell>
                 {measurementOptions.map((opt) => (
-                  <TableCell key={opt.value} align="right">
-                    {opt.label.split(' ')[0]}
+                  <TableCell
+                    key={opt.value}
+                    align="right"
+                    sx={{
+                      color: getDynamicColor(opt.value, m[opt.value]),
+                      fontWeight: 'bold',
+                    }}
+                  >
+                    {m[opt.value] || '-'}
                   </TableCell>
                 ))}
+                <TableCell align="right">
+                  <IconButton
+                    size="small"
+                    color="error"
+                    onClick={() => handleDelete(m.id)}
+                    aria-label="delete measurement"
+                  >
+                    <DeleteIcon fontSize="small" />
+                  </IconButton>
+                </TableCell>
               </TableRow>
-            </TableHead>
-            <TableBody>
-              {measurements.map((m) => (
-                <TableRow key={m.id} hover>
-                  <TableCell sx={{ fontWeight: 'bold' }}>{m.date}</TableCell>
-                  {measurementOptions.map((opt) => (
-                    <TableCell
-                      key={opt.value}
-                      align="right"
-                      sx={{
-                        color: getDynamicColor(opt.value, m[opt.value]),
-                        fontWeight: 'bold',
-                      }}
-                    >
-                      {m[opt.value] || '-'}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      </Paper>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
+          severity={snackbar.severity}
+          variant="filled"
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

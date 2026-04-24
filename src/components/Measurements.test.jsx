@@ -1,10 +1,4 @@
-import {
-  render,
-  screen,
-  fireEvent,
-  waitFor,
-  act,
-} from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import Measurements from './Measurements';
 import api from '../api';
 
@@ -34,6 +28,7 @@ const mockHistory = [
     date: '2023-01-01',
     bodyweight: 80,
     body_fat: 15,
+    vo2_max: 45,
     chest: 100,
     waist: 85,
     biceps: 35,
@@ -46,6 +41,7 @@ const mockHistory = [
     date: '2023-01-15',
     bodyweight: 79,
     body_fat: 14.5,
+    vo2_max: 46,
     chest: 99,
     waist: 84,
     biceps: 35.5,
@@ -65,63 +61,62 @@ describe('Measurements Component', () => {
   });
 
   test('renders history table with data including new fields', async () => {
-    await act(async () => {
-      render(<Measurements />);
-    });
+    render(<Measurements />);
 
     const dateElement = await screen.findByText('2023-01-01');
     expect(dateElement).toBeInTheDocument();
 
-    // Check for the data values - they appear in the document (may appear multiple times in sparklines)
+    // Check for the data values
     expect(screen.getAllByText('100').length).toBeGreaterThan(0);
     expect(screen.getAllByText('85').length).toBeGreaterThan(0);
     expect(screen.getAllByText('35').length).toBeGreaterThan(0);
     expect(screen.getAllByText('28').length).toBeGreaterThan(0);
     expect(screen.getAllByText('38').length).toBeGreaterThan(0);
     expect(screen.getAllByText('60').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('45').length).toBeGreaterThan(0);
   });
 
   test('submits form correctly with new fields', async () => {
     api.post.mockResolvedValue({ data: { success: true } });
-    await act(async () => {
-      render(<Measurements />);
-    });
+    render(<Measurements />);
 
-    fireEvent.change(screen.getByLabelText(/Weight/i), {
-      target: { value: '82' },
-    });
-    fireEvent.change(screen.getByLabelText(/Forearm/i), {
-      target: { value: '29' },
-    });
-    fireEvent.change(screen.getByLabelText(/Calf/i), {
-      target: { value: '39' },
-    });
-    fireEvent.change(screen.getByLabelText(/Thigh/i), {
-      target: { value: '61' },
-    });
+    const weightInput = await screen.findByLabelText(/Weight/i);
+    const vo2Input = await screen.findByLabelText(/VO2 Max/i);
+    const forearmInput = await screen.findByLabelText(/Forearm/i);
+    const calfInput = await screen.findByLabelText(/Calf/i);
+    const thighInput = await screen.findByLabelText(/Thigh/i);
+
+    fireEvent.change(weightInput, { target: { value: '82' } });
+    fireEvent.change(vo2Input, { target: { value: '47' } });
+    fireEvent.change(forearmInput, { target: { value: '29' } });
+    fireEvent.change(calfInput, { target: { value: '39' } });
+    fireEvent.change(thighInput, { target: { value: '61' } });
 
     const saveButton = screen.getByRole('button', { name: /Save Entry/i });
-    await act(async () => {
-      fireEvent.click(saveButton);
-    });
+    fireEvent.click(saveButton);
 
     await waitFor(() => {
       expect(api.post).toHaveBeenCalledWith(
         '/api/measurements',
         expect.objectContaining({
           bodyweight: '82',
+          vo2_max: '47',
           forearm: '29',
           calf: '39',
           thigh: '61',
         })
       );
     });
+    expect(
+      await screen.findByText('Measurement entry saved!')
+    ).toBeInTheDocument();
   });
 
   test('renders graph and allows switching measurement type', async () => {
-    await act(async () => {
-      render(<Measurements />);
-    });
+    render(<Measurements />);
+
+    // Wait for data to load
+    await screen.findByText('2023-01-01');
 
     // Get all line charts and use the first one (main chart, not sparklines)
     const lineCharts = await screen.findAllByTestId('line-chart');
@@ -140,9 +135,7 @@ describe('Measurements Component', () => {
     fireEvent.mouseDown(select);
 
     const option = await screen.findByRole('option', { name: 'Body Fat (%)' });
-    await act(async () => {
-      fireEvent.click(option);
-    });
+    fireEvent.click(option);
 
     const linesAfter = screen.getAllByTestId('line-element');
     expect(linesAfter.some((el) => el.textContent === 'Body Fat (%)')).toBe(
@@ -151,23 +144,35 @@ describe('Measurements Component', () => {
   });
 
   test('handles form submission error', async () => {
-    window.alert = jest.fn();
     api.post.mockRejectedValue(new Error('Server Error'));
-    await act(async () => {
-      render(<Measurements />);
-    });
+    render(<Measurements />);
 
-    fireEvent.change(screen.getByLabelText(/Weight/i), {
-      target: { value: '82' },
-    });
+    const weightInput = await screen.findByLabelText(/Weight/i);
+    fireEvent.change(weightInput, { target: { value: '82' } });
 
     const saveButton = screen.getByRole('button', { name: /Save Entry/i });
-    await act(async () => {
-      fireEvent.click(saveButton);
-    });
+    fireEvent.click(saveButton);
 
     await waitFor(() => {
-      expect(window.alert).toHaveBeenCalledWith('Failed to save measurement');
+      expect(
+        screen.getByText('Failed to save measurement')
+      ).toBeInTheDocument();
+    });
+  });
+
+  test('handles entry deletion', async () => {
+    window.confirm = jest.fn(() => true);
+    api.delete.mockResolvedValue({ data: { success: true } });
+
+    render(<Measurements />);
+
+    const deleteButtons = await screen.findAllByLabelText('delete measurement');
+    fireEvent.click(deleteButtons[0]);
+
+    expect(window.confirm).toHaveBeenCalled();
+    expect(api.delete).toHaveBeenCalledWith('/api/measurements/1');
+    await waitFor(() => {
+      expect(screen.getByText('Entry deleted')).toBeInTheDocument();
     });
   });
 });
