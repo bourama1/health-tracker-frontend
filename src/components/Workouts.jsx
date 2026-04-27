@@ -942,7 +942,7 @@ function ActiveWorkout({ day, onSaved, onCancel }) {
     try {
       await axios.post('/api/workouts/sessions', {
         day_id: day.id,
-        date: new Date().toISOString().split('T')[0],
+        date: day.selectedDate || new Date().toISOString().split('T')[0],
         notes: sessionNotes || null,
         logs: flatLogs,
       });
@@ -1005,7 +1005,10 @@ function ActiveWorkout({ day, onSaved, onCancel }) {
         }}
       >
         <Typography variant="h6" color="primary">
-          {day.name} — {new Date().toLocaleDateString()}
+          {day.name} —{' '}
+          {day.selectedDate
+            ? new Date(day.selectedDate + 'T00:00:00').toLocaleDateString()
+            : new Date().toLocaleDateString()}
         </Typography>
         {prevSession && (
           <Chip

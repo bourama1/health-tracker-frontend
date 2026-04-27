@@ -224,6 +224,51 @@ export default function Sleep() {
 
   // ─── HANDLERS ─────────────────────────────────────────────────────────────
 
+  useEffect(() => {
+    const existing = history.find((h) => h.date === formData.date);
+    if (existing) {
+      setFormData((prev) => ({
+        ...prev,
+        bedtime: existing.bedtime || '',
+        wake_time: existing.wake_time || '',
+        rhr: existing.rhr || '',
+        hrv: existing.hrv || '',
+        sleep_score: existing.sleep_score || '',
+        temp_dev: existing.temp_dev || '',
+        deep_sleep_minutes:
+          minutesToHm(existing.deep_sleep_minutes) === '-'
+            ? ''
+            : minutesToHm(existing.deep_sleep_minutes),
+        rem_sleep_minutes:
+          minutesToHm(existing.rem_sleep_minutes) === '-'
+            ? ''
+            : minutesToHm(existing.rem_sleep_minutes),
+        light_minutes:
+          minutesToHm(existing.light_minutes) === '-'
+            ? ''
+            : minutesToHm(existing.light_minutes),
+        awake_minutes:
+          minutesToHm(existing.awake_minutes) === '-'
+            ? ''
+            : minutesToHm(existing.awake_minutes),
+      }));
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        bedtime: '',
+        wake_time: '',
+        rhr: '',
+        hrv: '',
+        sleep_score: '',
+        temp_dev: '',
+        deep_sleep_minutes: '',
+        rem_sleep_minutes: '',
+        light_minutes: '',
+        awake_minutes: '',
+      }));
+    }
+  }, [formData.date, history]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {

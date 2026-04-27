@@ -76,7 +76,6 @@ export default function Measurements() {
     date: new Date().toISOString().split('T')[0],
     bodyweight: '',
     body_fat: '',
-    vo2_max: '',
     chest: '',
     waist: '',
     biceps: '',
@@ -147,6 +146,35 @@ export default function Measurements() {
     return getGradientColor(value, range.max, range.min);
   };
 
+  useEffect(() => {
+    const existing = measurements.find((m) => m.date === formData.date);
+    if (existing) {
+      setFormData((prev) => ({
+        ...prev,
+        bodyweight: existing.bodyweight || '',
+        body_fat: existing.body_fat || '',
+        chest: existing.chest || '',
+        waist: existing.waist || '',
+        biceps: existing.biceps || '',
+        forearm: existing.forearm || '',
+        calf: existing.calf || '',
+        thigh: existing.thigh || '',
+      }));
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        bodyweight: '',
+        body_fat: '',
+        chest: '',
+        waist: '',
+        biceps: '',
+        forearm: '',
+        calf: '',
+        thigh: '',
+      }));
+    }
+  }, [formData.date, measurements]);
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
@@ -165,7 +193,6 @@ export default function Measurements() {
         ...prev,
         bodyweight: '',
         body_fat: '',
-        vo2_max: '',
         chest: '',
         waist: '',
         biceps: '',
@@ -280,18 +307,6 @@ export default function Measurements() {
                     type="number"
                     inputProps={{ step: '0.1' }}
                     value={formData.body_fat}
-                    onChange={handleInputChange}
-                    sx={{ mb: 2 }}
-                  />
-                </Grid>
-                <Grid size={6}>
-                  <TextField
-                    fullWidth
-                    label="VO2 Max"
-                    name="vo2_max"
-                    type="number"
-                    inputProps={{ step: '0.1' }}
-                    value={formData.vo2_max}
                     onChange={handleInputChange}
                     sx={{ mb: 2 }}
                   />

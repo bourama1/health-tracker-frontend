@@ -122,8 +122,8 @@ export default function App() {
         return (
           <Dashboard
             onNavigate={handleNavigate}
-            onStartWorkout={(day) => {
-              setActiveWorkoutDay(day);
+            onStartWorkout={(day, date) => {
+              setActiveWorkoutDay({ ...day, selectedDate: date });
               setActiveTab('Workouts');
             }}
           />

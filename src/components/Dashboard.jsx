@@ -281,7 +281,6 @@ export default function Dashboard({
   const [measurementForm, setMeasurementForm] = useState({
     bodyweight: '',
     body_fat: '',
-    vo2_max: '',
     chest: '',
     waist: '',
     biceps: '',
@@ -422,7 +421,6 @@ export default function Dashboard({
       setMeasurementForm({
         bodyweight: activeData.measurements.bodyweight || '',
         body_fat: activeData.measurements.body_fat || '',
-        vo2_max: activeData.measurements.vo2_max || '',
         chest: activeData.measurements.chest || '',
         waist: activeData.measurements.waist || '',
         biceps: activeData.measurements.biceps || '',
@@ -434,7 +432,6 @@ export default function Dashboard({
       setMeasurementForm({
         bodyweight: '',
         body_fat: '',
-        vo2_max: '',
         chest: '',
         waist: '',
         biceps: '',
@@ -451,7 +448,6 @@ export default function Dashboard({
       ? {
           bodyweight: activeData.measurements.bodyweight || '',
           body_fat: activeData.measurements.body_fat || '',
-          vo2_max: activeData.measurements.vo2_max || '',
           chest: activeData.measurements.chest || '',
           waist: activeData.measurements.waist || '',
           biceps: activeData.measurements.biceps || '',
@@ -462,7 +458,6 @@ export default function Dashboard({
       : {
           bodyweight: '',
           body_fat: '',
-          vo2_max: '',
           chest: '',
           waist: '',
           biceps: '',
@@ -1056,7 +1051,10 @@ export default function Dashboard({
                       variant="contained"
                       color="secondary"
                       onClick={() =>
-                        onStartWorkout(activeData.scheduledWorkout)
+                        onStartWorkout(
+                          activeData.scheduledWorkout,
+                          activeDateStr
+                        )
                       }
                     >
                       Start Scheduled
@@ -1366,7 +1364,6 @@ export default function Dashboard({
             {[
               { id: 'bodyweight', label: 'Weight (kg)' },
               { id: 'body_fat', label: 'Body Fat (%)' },
-              { id: 'vo2_max', label: 'VO2 Max' },
               { id: 'chest', label: 'Chest (cm)' },
               { id: 'waist', label: 'Waist (cm)' },
               { id: 'biceps', label: 'Biceps (cm)' },
@@ -1464,7 +1461,10 @@ export default function Dashboard({
                     color="primary"
                     variant="outlined"
                     onClick={() => {
-                      onStartWorkout({ ...day, plan_name: plan.name });
+                      onStartWorkout(
+                        { ...day, plan_name: plan.name },
+                        activeDateStr
+                      );
                       setOpenStartWorkout(false);
                     }}
                   />

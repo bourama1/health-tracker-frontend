@@ -81,13 +81,11 @@ describe('Measurements Component', () => {
     render(<Measurements />);
 
     const weightInput = await screen.findByLabelText(/Weight/i);
-    const vo2Input = await screen.findByLabelText(/VO2 Max/i);
     const forearmInput = await screen.findByLabelText(/Forearm/i);
     const calfInput = await screen.findByLabelText(/Calf/i);
     const thighInput = await screen.findByLabelText(/Thigh/i);
 
     fireEvent.change(weightInput, { target: { value: '82' } });
-    fireEvent.change(vo2Input, { target: { value: '47' } });
     fireEvent.change(forearmInput, { target: { value: '29' } });
     fireEvent.change(calfInput, { target: { value: '39' } });
     fireEvent.change(thighInput, { target: { value: '61' } });
@@ -100,7 +98,6 @@ describe('Measurements Component', () => {
         '/api/measurements',
         expect.objectContaining({
           bodyweight: '82',
-          vo2_max: '47',
           forearm: '29',
           calf: '39',
           thigh: '61',
