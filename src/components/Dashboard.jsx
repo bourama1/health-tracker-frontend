@@ -864,365 +864,160 @@ export default function Dashboard({
           </Box>
 
           <Grid container spacing={2} sx={{ flex: 1, alignItems: 'stretch' }}>
-            {/* SLEEP - Full Width as it has lots of info */}
-            <Grid size={{ xs: 12 }} sx={{ display: 'flex' }}>
+            {/* SLEEP */}
+            <Grid size={{ xs: 12, md: 6 }} sx={{ display: 'flex' }}>
               <Card sx={cardStyle}>
                 <CardContent sx={{ flex: 1 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                     <BedtimeIcon color="info" sx={{ mr: 1 }} />
-                    <Typography variant="h6">Sleep</Typography>
+                    <Typography variant="h6" fontWeight="bold">Sleep</Typography>
                     {activeData.sleep && (
-                      <CheckCircleIcon
-                        color="success"
-                        sx={{ ml: 'auto', fontSize: 24 }}
-                      />
+                      <CheckCircleIcon color="success" sx={{ ml: 'auto', fontSize: 20 }} />
                     )}
                   </Box>
                   {activeData.sleep ? (
-                    <Grid container spacing={2}>
+                    <Grid container spacing={1.5}>
                       {[
-                        { label: 'Duration', value: minutesToHm((activeData.sleep.deep_sleep_minutes || 0) + (activeData.sleep.rem_sleep_minutes || 0) + (activeData.sleep.light_minutes || 0)), bold: true },
-                        { label: 'RHR', value: activeData.sleep.rhr || '-', bold: true },
-                        { label: 'HRV', value: activeData.sleep.hrv || '-', bold: true },
+                        { label: 'Duration', value: minutesToHm((activeData.sleep.deep_sleep_minutes || 0) + (activeData.sleep.rem_sleep_minutes || 0) + (activeData.sleep.light_minutes || 0)) },
+                        { label: 'Score', value: activeData.sleep.sleep_score || '-' },
+                        { label: 'RHR', value: activeData.sleep.rhr ? `${activeData.sleep.rhr} bpm` : '-' },
+                        { label: 'HRV', value: activeData.sleep.hrv ? `${activeData.sleep.hrv} ms` : '-' },
+                        { label: 'Rest. %', value: activeData.sleep.restorative_sleep_percentage != null ? `${activeData.sleep.restorative_sleep_percentage}%` : '-' },
                         { label: 'Deep', value: minutesToHm(activeData.sleep.deep_sleep_minutes) },
                         { label: 'REM', value: minutesToHm(activeData.sleep.rem_sleep_minutes) },
-                        { label: 'Light', value: minutesToHm(activeData.sleep.light_minutes) },
-                        { label: 'Rest. %', value: activeData.sleep.restorative_sleep_percentage != null ? `${activeData.sleep.restorative_sleep_percentage}%` : '-', bold: true },
-                        { label: 'Movements', value: activeData.sleep.movements ?? '-', bold: true },
-                        { label: 'T&T', value: activeData.sleep.tosses_and_turns ?? '-', bold: true },
-                        { label: 'Bedtime', value: activeData.sleep.bedtime || '-' },
-                        { label: 'Wake', value: activeData.sleep.wake_time || '-' },
+                        { label: 'Toss & Turn', value: activeData.sleep.tosses_and_turns ?? '-' },
                       ].map((item, idx) => (
-                        <Grid key={idx} size={{ xs: 4, sm: 2, md: 1.5 }}>
-                          <Typography variant="caption" color="text.secondary">
+                        <Grid key={idx} size={3}>
+                          <Typography variant="caption" color="text.secondary" display="block" noWrap>
                             {item.label}
                           </Typography>
-                          <Typography variant="body1" fontWeight={item.bold ? "bold" : "normal"}>
+                          <Typography variant="body2" fontWeight="bold">
                             {item.value}
                           </Typography>
                         </Grid>
                       ))}
                     </Grid>
                   ) : (
-                    <Box sx={{ textAlign: 'center', py: 2, flex: 1 }}>
-                      <Typography variant="body2" color="text.secondary">
-                        No sleep data recorded.
-                      </Typography>
-                    </Box>
+                    <Typography variant="body2" color="text.secondary">No data.</Typography>
                   )}
                 </CardContent>
                 <CardActions sx={{ p: 2, pt: 0, gap: 1 }}>
-                  <Button size="small" variant="contained" onClick={handleSyncSleep} disabled={syncing}>Sync Fit</Button>
-                  <Button size="small" variant="contained" color="secondary" onClick={handleSyncUltrahuman} disabled={syncingUh}>Sync UH</Button>
+                  <Button size="small" variant="outlined" onClick={handleSyncSleep} disabled={syncing}>Sync Fit</Button>
+                  <Button size="small" variant="outlined" color="secondary" onClick={handleSyncUltrahuman} disabled={syncingUh}>Sync UH</Button>
                 </CardActions>
               </Card>
             </Grid>
 
-            {/* MEASUREMENTS - Full Width as requested */}
-            <Grid size={{ xs: 12 }} sx={{ display: 'flex' }}>
+            {/* MEASUREMENTS */}
+            <Grid size={{ xs: 12, md: 6 }} sx={{ display: 'flex' }}>
               <Card sx={cardStyle}>
                 <CardContent sx={{ flex: 1 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                     <MonitorWeightIcon color="success" sx={{ mr: 1 }} />
-                    <Typography variant="h6">Measurements</Typography>
+                    <Typography variant="h6" fontWeight="bold">Measurements</Typography>
                     {activeData.measurements && (
-                      <CheckCircleIcon
-                        color="success"
-                        sx={{ ml: 'auto', fontSize: 24 }}
-                      />
+                      <CheckCircleIcon color="success" sx={{ ml: 'auto', fontSize: 20 }} />
                     )}
                   </Box>
                   {activeData.measurements ? (
-                    <Grid container spacing={2}>
+                    <Grid container spacing={1.5}>
                       {[
                         { label: 'Weight', value: activeData.measurements.bodyweight, unit: 'kg' },
                         { label: 'Body Fat', value: activeData.measurements.body_fat, unit: '%' },
                         { label: 'VO2 Max', value: activeData.measurements.vo2_max, unit: '' },
-                        { label: 'Chest', value: activeData.measurements.chest, unit: 'cm' },
                         { label: 'Waist', value: activeData.measurements.waist, unit: 'cm' },
                         { label: 'Biceps', value: activeData.measurements.biceps, unit: 'cm' },
-                        { label: 'Forearm', value: activeData.measurements.forearm, unit: 'cm' },
-                        { label: 'Calf', value: activeData.measurements.calf, unit: 'cm' },
+                        { label: 'Chest', value: activeData.measurements.chest, unit: 'cm' },
                         { label: 'Thigh', value: activeData.measurements.thigh, unit: 'cm' },
+                        { label: 'Calf', value: activeData.measurements.calf, unit: 'cm' },
                       ].filter(m => m.value).map((m, idx) => (
-                        <Grid key={idx} size={{ xs: 4, sm: 2, md: 1.33 }}>
-                          <Typography variant="caption" color="text.secondary">
+                        <Grid key={idx} size={3}>
+                          <Typography variant="caption" color="text.secondary" display="block" noWrap>
                             {m.label}
                           </Typography>
-                          <Typography variant="body1" fontWeight="bold">
+                          <Typography variant="body2" fontWeight="bold">
                             {m.value}{m.unit}
                           </Typography>
                         </Grid>
                       ))}
                     </Grid>
                   ) : (
-                    <Box sx={{ textAlign: 'center', py: 2, flex: 1 }}>
-                      <Typography variant="body2" color="text.secondary">No measurements recorded.</Typography>
-                    </Box>
+                    <Typography variant="body2" color="text.secondary">No data.</Typography>
                   )}
                 </CardContent>
                 <CardActions sx={{ p: 2, pt: 0 }}>
-                  <Button variant="contained" startIcon={<AddIcon />} onClick={handleOpenMeasurements}>
-                    {activeData.measurements ? 'Edit' : 'Add'} Measurements
+                  <Button size="small" variant="outlined" startIcon={<AddIcon />} onClick={handleOpenMeasurements}>
+                    {activeData.measurements ? 'Edit' : 'Add'}
                   </Button>
                 </CardActions>
               </Card>
             </Grid>
 
             {/* WORKOUT */}
-            <Grid size={{ xs: 12, md: 8 }} sx={{ display: 'flex' }}>
+            <Grid size={{ xs: 12, md: 6 }} sx={{ display: 'flex' }}>
               <Card sx={cardStyle}>
-                <CardContent
-                  sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}
-                >
+                <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                     <FitnessCenterIcon color="primary" sx={{ mr: 1 }} />
-                    <Typography variant="h6">Workout</Typography>
-                    {activeData.workout && (
-                      <CheckCircleIcon color="success" sx={{ ml: 'auto' }} />
-                    )}
+                    <Typography variant="h6" fontWeight="bold">Workout</Typography>
+                    {activeData.workout && <CheckCircleIcon color="success" sx={{ ml: 'auto', fontSize: 20 }} />}
                   </Box>
                   {activeData.workout ? (
-                    <Box
-                      sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}
-                    >
-                      <Typography variant="subtitle1" fontWeight="bold">
-                        {activeData.workout.day_name}
-                      </Typography>
-                      <Typography
-                        variant="body2"
-                        color="text.secondary"
-                        gutterBottom
-                      >
+                    <Box>
+                      <Typography variant="subtitle2" fontWeight="bold">{activeData.workout.day_name}</Typography>
+                      <Typography variant="caption" color="text.secondary" gutterBottom display="block">
                         {activeData.workout.plan_name}
                       </Typography>
-                      <Divider sx={{ my: 1 }} />
-
-                      <Typography
-                        variant="caption"
-                        color="text.secondary"
-                        sx={{ display: 'block', mb: 0.5 }}
-                      >
-                        Exercises Trained:
-                      </Typography>
-                      <Box
-                        sx={{
-                          display: 'flex',
-                          flexWrap: 'wrap',
-                          gap: 0.5,
-                          mb: 1,
-                        }}
-                      >
-                        {[
-                          ...new Set(
-                            activeData.workout.logs.map((l) => l.exercise_name)
-                          ),
-                        ].map((name, i) => (
-                          <Chip
-                            key={i}
-                            label={name}
-                            size="small"
-                            sx={{ fontSize: '0.65rem' }}
-                          />
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 1 }}>
+                        {[...new Set(activeData.workout.logs.map(l => l.exercise_name))].slice(0, 4).map((name, i) => (
+                          <Chip key={i} label={name} size="small" sx={{ fontSize: '0.6rem', height: 20 }} />
                         ))}
                       </Box>
-
-                      <Grid container spacing={2}>
-                        <Grid size={6}>
-                          <Typography variant="caption" color="text.secondary">
-                            Total Sets
-                          </Typography>
-                          <Typography variant="body2" fontWeight="bold">
-                            {activeData.workout.logs.length}
-                          </Typography>
-                        </Grid>
-                        <Grid size={6}>
-                          <Typography variant="caption" color="text.secondary">
-                            Muscles
-                          </Typography>
-                          <Typography variant="body2" fontWeight="bold">
-                            {
-                              new Set(
-                                activeData.workout.logs.flatMap((l) =>
-                                  (l.primary_muscles || '')
-                                    .split(',')
-                                    .map((m) => m.trim())
-                                )
-                              ).size
-                            }
-                          </Typography>
-                        </Grid>
-                      </Grid>
                       <MuscleHighlight sessionLogs={activeData.workout.logs} />
                     </Box>
                   ) : activeData.scheduledWorkout ? (
-                    <Box
-                      sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}
-                    >
-                      <Box
-                        sx={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'flex-start',
-                        }}
-                      >
-                        <Box>
-                          <Typography variant="subtitle1" fontWeight="bold">
-                            {activeData.scheduledWorkout.name}
-                          </Typography>
-                          <Typography variant="body2" color="primary">
-                            Scheduled
-                          </Typography>
-                        </Box>
-                        <MuscleReadiness
-                          day={activeData.scheduledWorkout}
-                          lastTrainedMuscles={allData.lastTrainedMuscles}
-                        />
+                    <Box>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <Typography variant="subtitle2" fontWeight="bold">{activeData.scheduledWorkout.name}</Typography>
+                        <MuscleReadiness day={activeData.scheduledWorkout} lastTrainedMuscles={allData.lastTrainedMuscles} />
                       </Box>
-                      <Typography
-                        variant="caption"
-                        color="text.secondary"
-                        gutterBottom
-                        display="block"
-                      >
-                        {activeData.scheduledWorkout.plan_name}
-                      </Typography>
-
-                      <Typography
-                        variant="caption"
-                        color="text.secondary"
-                        sx={{ display: 'block', mt: 1, mb: 0.5 }}
-                      >
-                        Scheduled Exercises:
-                      </Typography>
-                      <Box
-                        sx={{
-                          display: 'flex',
-                          flexWrap: 'wrap',
-                          gap: 0.5,
-                          mb: 1,
-                        }}
-                      >
-                        {activeData.scheduledWorkout.exercises.map((ex, i) => (
-                          <Chip
-                            key={i}
-                            label={ex.name}
-                            size="small"
-                            sx={{ fontSize: '0.65rem' }}
-                          />
-                        ))}
-                      </Box>
-
-                      <MuscleHighlight
-                        exercises={activeData.scheduledWorkout.exercises}
-                      />
+                      <Typography variant="caption" color="primary" display="block">Scheduled</Typography>
+                      <MuscleHighlight exercises={activeData.scheduledWorkout.exercises} />
                     </Box>
                   ) : (
-                    <Box
-                      sx={{
-                        textAlign: 'center',
-                        py: 8,
-                        flex: 1,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      <FitnessCenterIcon
-                        sx={{
-                          fontSize: 64,
-                          color: 'action.disabled',
-                          mb: 2,
-                          mx: 'auto',
-                        }}
-                      />
-                      <Typography variant="h6" color="text.secondary">
-                        Rest Day
-                      </Typography>
+                    <Box sx={{ textAlign: 'center', py: 2 }}>
+                      <Typography variant="body2" color="text.secondary">Rest Day</Typography>
                     </Box>
                   )}
                 </CardContent>
                 <CardActions sx={{ p: 2, pt: 0 }}>
-                  {activeData.workout ? (
-                    <Button
-                      fullWidth
-                      variant="contained"
-                      onClick={() => onNavigate('Workouts')}
-                    >
-                      View Workout
-                    </Button>
-                  ) : activeData.scheduledWorkout ? (
-                    <Button
-                      fullWidth
-                      variant="contained"
-                      color="secondary"
-                      onClick={() =>
-                        onStartWorkout(
-                          activeData.scheduledWorkout,
-                          activeDateStr
-                        )
-                      }
-                    >
-                      Start Scheduled
-                    </Button>
-                  ) : (
-                    <Button
-                      fullWidth
-                      variant="contained"
-                      color="primary"
-                      onClick={() => setOpenStartWorkout(true)}
-                    >
-                      Log Workout
-                    </Button>
-                  )}
+                  <Button size="small" variant="contained" fullWidth onClick={() => activeData.workout ? onNavigate('Workouts') : activeData.scheduledWorkout ? onStartWorkout(activeData.scheduledWorkout, activeDateStr) : setOpenStartWorkout(true)}>
+                    {activeData.workout ? 'View' : activeData.scheduledWorkout ? 'Start' : 'Log'}
+                  </Button>
                 </CardActions>
               </Card>
             </Grid>
 
             {/* PHOTOS */}
-            <Grid size={{ xs: 12, md: 4 }} sx={{ display: 'flex' }}>
+            <Grid size={{ xs: 12, md: 6 }} sx={{ display: 'flex' }}>
               <Card sx={cardStyle}>
-                <CardContent sx={{ flex: 1, pb: 0 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                <CardContent sx={{ flex: 1 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                     <PhotoCameraIcon color="warning" sx={{ mr: 1 }} />
-                    <Typography variant="h6">Photos</Typography>
-                    {activeData.hasPhotos && (
-                      <CheckCircleIcon
-                        color="success"
-                        sx={{ ml: 'auto', fontSize: 24 }}
-                      />
-                    )}
+                    <Typography variant="h6" fontWeight="bold">Photos</Typography>
+                    {activeData.hasPhotos && <CheckCircleIcon color="success" sx={{ ml: 'auto', fontSize: 20 }} />}
                   </Box>
+                  <Typography variant="body2" color="text.secondary">
+                    {activeData.hasPhotos ? 'Progress captured.' : 'No photos yet.'}
+                  </Typography>
                 </CardContent>
-                <CardActions
-                  sx={{
-                    p: 2,
-                    flex: 1,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'center',
-                    gap: 1,
-                  }}
-                >
-                  <Button
-                    fullWidth
-                    variant="contained"
-                    startIcon={<AddIcon />}
-                    onClick={() => setOpenPhotos(true)}
-                  >
-                    {activeData.hasPhotos ? 'Edit' : 'Upload'} Photos
+                <CardActions sx={{ p: 2, pt: 0, gap: 1 }}>
+                  <Button size="small" variant="outlined" startIcon={<AddIcon />} onClick={() => setOpenPhotos(true)} fullWidth>
+                    Upload
                   </Button>
                   {activeData.hasPhotos && (
-                    <Button
-                      fullWidth
-                      variant="contained"
-                      color="secondary"
-                      startIcon={<VisibilityIcon />}
-                      onClick={() =>
-                        onNavigate('Photos', { date: activeDateStr })
-                      }
-                    >
-                      View Progress
+                    <Button size="small" variant="contained" color="secondary" startIcon={<VisibilityIcon />} onClick={() => onNavigate('Photos', { date: activeDateStr })} fullWidth>
+                      View
                     </Button>
                   )}
                 </CardActions>
