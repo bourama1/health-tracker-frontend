@@ -36,6 +36,7 @@ import {
 } from 'recharts';
 
 import axios from '../api';
+import AiInsights from './AiInsights';
 import {
   addTrendline,
   calcDomain,
@@ -80,6 +81,24 @@ const sleepStatsOptions = [
   { label: 'RHR (bpm)', value: 'rhr', color: '#ff7300', better: 'lower' },
   { label: 'HRV (ms)', value: 'hrv', color: '#8884d8', better: 'higher' },
   { label: 'Score', value: 'sleep_score', color: '#82ca9d', better: 'higher' },
+  {
+    label: 'Restorative %',
+    value: 'restorative_sleep_percentage',
+    color: '#ab47bc',
+    better: 'higher',
+  },
+  {
+    label: 'Movements',
+    value: 'movements',
+    color: '#ffa726',
+    better: 'lower',
+  },
+  {
+    label: 'Toss & Turn',
+    value: 'tosses_and_turns',
+    color: '#ef5350',
+    better: 'lower',
+  },
   {
     label: 'Temp Dev (°C)',
     value: 'temp_dev',
@@ -128,6 +147,9 @@ export default function Sleep() {
     rem_sleep_minutes: '',
     light_minutes: '',
     awake_minutes: '',
+    restorative_sleep_percentage: '',
+    movements: '',
+    tosses_and_turns: '',
   });
 
   const [syncing, setSyncing] = useState(false);
@@ -172,6 +194,9 @@ export default function Sleep() {
       'deep_sleep_minutes',
       'rem_sleep_minutes',
       'awake_minutes',
+      'restorative_sleep_percentage',
+      'movements',
+      'tosses_and_turns',
       'bedtime_dev',
       'wake_dev',
     ];
@@ -215,7 +240,9 @@ export default function Sleep() {
       key === 'awake_minutes' ||
       key === 'bedtime_dev' ||
       key === 'wake_dev' ||
-      key === 'temp_dev'
+      key === 'temp_dev' ||
+      key === 'movements' ||
+      key === 'tosses_and_turns'
     ) {
       return getGradientColor(value, range.min, range.max); // Lower is better
     }
@@ -251,6 +278,9 @@ export default function Sleep() {
           minutesToHm(existing.awake_minutes) === '-'
             ? ''
             : minutesToHm(existing.awake_minutes),
+        restorative_sleep_percentage: existing.restorative_sleep_percentage || '',
+        movements: existing.movements || '',
+        tosses_and_turns: existing.tosses_and_turns || '',
       }));
     } else {
       setFormData((prev) => ({
@@ -265,6 +295,9 @@ export default function Sleep() {
         rem_sleep_minutes: '',
         light_minutes: '',
         awake_minutes: '',
+        restorative_sleep_percentage: '',
+        movements: '',
+        tosses_and_turns: '',
       }));
     }
   }, [formData.date, history]);
@@ -578,6 +611,39 @@ export default function Sleep() {
                     sx={{ mb: 2 }}
                   />
                 </Grid>
+                <Grid size={4}>
+                  <TextField
+                    fullWidth
+                    label="Restorative %"
+                    name="restorative_sleep_percentage"
+                    type="number"
+                    value={formData.restorative_sleep_percentage}
+                    onChange={handleChange}
+                    sx={{ mb: 2 }}
+                  />
+                </Grid>
+                <Grid size={4}>
+                  <TextField
+                    fullWidth
+                    label="Movements"
+                    name="movements"
+                    type="number"
+                    value={formData.movements}
+                    onChange={handleChange}
+                    sx={{ mb: 2 }}
+                  />
+                </Grid>
+                <Grid size={4}>
+                  <TextField
+                    fullWidth
+                    label="Toss & Turn"
+                    name="tosses_and_turns"
+                    type="number"
+                    value={formData.tosses_and_turns}
+                    onChange={handleChange}
+                    sx={{ mb: 2 }}
+                  />
+                </Grid>
               </Grid>
               <Box sx={{ mt: 'auto' }}>
                 <Button
@@ -670,6 +736,10 @@ export default function Sleep() {
                 </LineChart>
               </ResponsiveContainer>
             </Box>
+            <AiInsights 
+              data={history.slice(-14)} 
+              contextType="sleep" 
+            />
           </Paper>
         </Grid>
       </Grid>
@@ -812,6 +882,9 @@ export default function Sleep() {
               <TableCell align="right">RHR</TableCell>
               <TableCell align="right">HRV</TableCell>
               <TableCell align="right">Score</TableCell>
+              <TableCell align="right">Rest. %</TableCell>
+              <TableCell align="right">Mvmnt</TableCell>
+              <TableCell align="right">T&T</TableCell>
               <TableCell align="right">Temp</TableCell>
               <TableCell align="right">Deep</TableCell>
               <TableCell align="right">REM</TableCell>
@@ -874,6 +947,33 @@ export default function Sleep() {
                   }}
                 >
                   {row.sleep_score || '-'}
+                </TableCell>
+                <TableCell
+                  align="right"
+                  sx={{
+                    color: getDynamicColor('restorative_sleep_percentage', row.restorative_sleep_percentage),
+                    fontWeight: 'bold',
+                  }}
+                >
+                  {row.restorative_sleep_percentage != null ? `${row.restorative_sleep_percentage}%` : '-'}
+                </TableCell>
+                <TableCell
+                  align="right"
+                  sx={{
+                    color: getDynamicColor('movements', row.movements),
+                    fontWeight: 'bold',
+                  }}
+                >
+                  {row.movements || '-'}
+                </TableCell>
+                <TableCell
+                  align="right"
+                  sx={{
+                    color: getDynamicColor('tosses_and_turns', row.tosses_and_turns),
+                    fontWeight: 'bold',
+                  }}
+                >
+                  {row.tosses_and_turns || '-'}
                 </TableCell>
                 <TableCell
                   align="right"

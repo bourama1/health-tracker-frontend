@@ -50,6 +50,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import ExerciseLibrary from './ExerciseLibrary';
+import AiInsights from './AiInsights';
 
 const DAYS_OF_WEEK = [
   'Monday',
@@ -1428,6 +1429,7 @@ function StatsPanel() {
           })}
         </Box>
       )}
+      <AiInsights data={stats} contextType="workout stats" />
     </Box>
   );
 }
@@ -1582,6 +1584,7 @@ function HistoryPanel() {
           onClose={() => setProgressEx(null)}
         />
       )}
+      <AiInsights data={history} contextType="workout history" />
     </Box>
   );
 }

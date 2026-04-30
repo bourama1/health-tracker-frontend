@@ -36,6 +36,7 @@ import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import Body from '../vendor/body-highlighter';
 import axios from '../api';
+import AiInsights from './AiInsights';
 import { BODY_MAP_MAPPING } from '../constants/muscles';
 
 const DAYS_OF_WEEK = [
@@ -863,8 +864,113 @@ export default function Dashboard({
           </Box>
 
           <Grid container spacing={2} sx={{ flex: 1, alignItems: 'stretch' }}>
-            {/* COLUMN 1: WORKOUT */}
-            <Grid size={{ xs: 12, md: 6 }} sx={{ display: 'flex' }}>
+            {/* SLEEP - Full Width as it has lots of info */}
+            <Grid size={{ xs: 12 }} sx={{ display: 'flex' }}>
+              <Card sx={cardStyle}>
+                <CardContent sx={{ flex: 1 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                    <BedtimeIcon color="info" sx={{ mr: 1 }} />
+                    <Typography variant="h6">Sleep</Typography>
+                    {activeData.sleep && (
+                      <CheckCircleIcon
+                        color="success"
+                        sx={{ ml: 'auto', fontSize: 24 }}
+                      />
+                    )}
+                  </Box>
+                  {activeData.sleep ? (
+                    <Grid container spacing={2}>
+                      {[
+                        { label: 'Duration', value: minutesToHm((activeData.sleep.deep_sleep_minutes || 0) + (activeData.sleep.rem_sleep_minutes || 0) + (activeData.sleep.light_minutes || 0)), bold: true },
+                        { label: 'RHR', value: activeData.sleep.rhr || '-', bold: true },
+                        { label: 'HRV', value: activeData.sleep.hrv || '-', bold: true },
+                        { label: 'Deep', value: minutesToHm(activeData.sleep.deep_sleep_minutes) },
+                        { label: 'REM', value: minutesToHm(activeData.sleep.rem_sleep_minutes) },
+                        { label: 'Light', value: minutesToHm(activeData.sleep.light_minutes) },
+                        { label: 'Rest. %', value: activeData.sleep.restorative_sleep_percentage != null ? `${activeData.sleep.restorative_sleep_percentage}%` : '-', bold: true },
+                        { label: 'Movements', value: activeData.sleep.movements ?? '-', bold: true },
+                        { label: 'T&T', value: activeData.sleep.tosses_and_turns ?? '-', bold: true },
+                        { label: 'Bedtime', value: activeData.sleep.bedtime || '-' },
+                        { label: 'Wake', value: activeData.sleep.wake_time || '-' },
+                      ].map((item, idx) => (
+                        <Grid key={idx} size={{ xs: 4, sm: 2, md: 1.5 }}>
+                          <Typography variant="caption" color="text.secondary">
+                            {item.label}
+                          </Typography>
+                          <Typography variant="body1" fontWeight={item.bold ? "bold" : "normal"}>
+                            {item.value}
+                          </Typography>
+                        </Grid>
+                      ))}
+                    </Grid>
+                  ) : (
+                    <Box sx={{ textAlign: 'center', py: 2, flex: 1 }}>
+                      <Typography variant="body2" color="text.secondary">
+                        No sleep data recorded.
+                      </Typography>
+                    </Box>
+                  )}
+                </CardContent>
+                <CardActions sx={{ p: 2, pt: 0, gap: 1 }}>
+                  <Button size="small" variant="contained" onClick={handleSyncSleep} disabled={syncing}>Sync Fit</Button>
+                  <Button size="small" variant="contained" color="secondary" onClick={handleSyncUltrahuman} disabled={syncingUh}>Sync UH</Button>
+                </CardActions>
+              </Card>
+            </Grid>
+
+            {/* MEASUREMENTS - Full Width as requested */}
+            <Grid size={{ xs: 12 }} sx={{ display: 'flex' }}>
+              <Card sx={cardStyle}>
+                <CardContent sx={{ flex: 1 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                    <MonitorWeightIcon color="success" sx={{ mr: 1 }} />
+                    <Typography variant="h6">Measurements</Typography>
+                    {activeData.measurements && (
+                      <CheckCircleIcon
+                        color="success"
+                        sx={{ ml: 'auto', fontSize: 24 }}
+                      />
+                    )}
+                  </Box>
+                  {activeData.measurements ? (
+                    <Grid container spacing={2}>
+                      {[
+                        { label: 'Weight', value: activeData.measurements.bodyweight, unit: 'kg' },
+                        { label: 'Body Fat', value: activeData.measurements.body_fat, unit: '%' },
+                        { label: 'VO2 Max', value: activeData.measurements.vo2_max, unit: '' },
+                        { label: 'Chest', value: activeData.measurements.chest, unit: 'cm' },
+                        { label: 'Waist', value: activeData.measurements.waist, unit: 'cm' },
+                        { label: 'Biceps', value: activeData.measurements.biceps, unit: 'cm' },
+                        { label: 'Forearm', value: activeData.measurements.forearm, unit: 'cm' },
+                        { label: 'Calf', value: activeData.measurements.calf, unit: 'cm' },
+                        { label: 'Thigh', value: activeData.measurements.thigh, unit: 'cm' },
+                      ].filter(m => m.value).map((m, idx) => (
+                        <Grid key={idx} size={{ xs: 4, sm: 2, md: 1.33 }}>
+                          <Typography variant="caption" color="text.secondary">
+                            {m.label}
+                          </Typography>
+                          <Typography variant="body1" fontWeight="bold">
+                            {m.value}{m.unit}
+                          </Typography>
+                        </Grid>
+                      ))}
+                    </Grid>
+                  ) : (
+                    <Box sx={{ textAlign: 'center', py: 2, flex: 1 }}>
+                      <Typography variant="body2" color="text.secondary">No measurements recorded.</Typography>
+                    </Box>
+                  )}
+                </CardContent>
+                <CardActions sx={{ p: 2, pt: 0 }}>
+                  <Button variant="contained" startIcon={<AddIcon />} onClick={handleOpenMeasurements}>
+                    {activeData.measurements ? 'Edit' : 'Add'} Measurements
+                  </Button>
+                </CardActions>
+              </Card>
+            </Grid>
+
+            {/* WORKOUT */}
+            <Grid size={{ xs: 12, md: 8 }} sx={{ display: 'flex' }}>
               <Card sx={cardStyle}>
                 <CardContent
                   sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}
@@ -1073,263 +1179,38 @@ export default function Dashboard({
               </Card>
             </Grid>
 
-            {/* COLUMN 2: REST OF CARDS */}
-            <Grid
-              size={{ xs: 12, md: 6 }}
-              sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}
-            >
-              {/* Sleep Card */}
-              <Card sx={{ ...cardStyle, flex: 1.2 }}>
-                <CardContent sx={{ flex: 1 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                    <BedtimeIcon color="info" sx={{ mr: 1 }} />
-                    <Typography variant="subtitle1" fontWeight="bold">
-                      Sleep Details
-                    </Typography>
-                    {activeData.sleep && (
-                      <CheckCircleIcon
-                        color="success"
-                        sx={{ ml: 'auto', fontSize: 20 }}
-                      />
-                    )}
-                  </Box>
-                  {activeData.sleep ? (
-                    <Grid container spacing={2}>
-                      <Grid size={4}>
-                        <Typography variant="caption" color="text.secondary">
-                          Duration
-                        </Typography>
-                        <Typography variant="body2" fontWeight="bold">
-                          {minutesToHm(
-                            (activeData.sleep.deep_sleep_minutes || 0) +
-                              (activeData.sleep.rem_sleep_minutes || 0) +
-                              (activeData.sleep.light_minutes || 0)
-                          )}
-                        </Typography>
-                      </Grid>
-                      <Grid size={4}>
-                        <Typography variant="caption" color="text.secondary">
-                          RHR
-                        </Typography>
-                        <Typography variant="body2" fontWeight="bold">
-                          {activeData.sleep.rhr || '-'}
-                        </Typography>
-                      </Grid>
-                      <Grid size={4}>
-                        <Typography variant="caption" color="text.secondary">
-                          HRV
-                        </Typography>
-                        <Typography variant="body2" fontWeight="bold">
-                          {activeData.sleep.hrv || '-'}
-                        </Typography>
-                      </Grid>
-                      <Grid size={4}>
-                        <Typography variant="caption" color="text.secondary">
-                          Deep
-                        </Typography>
-                        <Typography variant="body2">
-                          {minutesToHm(activeData.sleep.deep_sleep_minutes)}
-                        </Typography>
-                      </Grid>
-                      <Grid size={4}>
-                        <Typography variant="caption" color="text.secondary">
-                          REM
-                        </Typography>
-                        <Typography variant="body2">
-                          {minutesToHm(activeData.sleep.rem_sleep_minutes)}
-                        </Typography>
-                      </Grid>
-                      <Grid size={4}>
-                        <Typography variant="caption" color="text.secondary">
-                          Light
-                        </Typography>
-                        <Typography variant="body2">
-                          {minutesToHm(activeData.sleep.light_minutes)}
-                        </Typography>
-                      </Grid>
-                      <Grid size={6}>
-                        <Typography variant="caption" color="text.secondary">
-                          Bedtime
-                        </Typography>
-                        <Typography variant="body2">
-                          {activeData.sleep.bedtime || '-'}
-                        </Typography>
-                      </Grid>
-                      <Grid size={6}>
-                        <Typography variant="caption" color="text.secondary">
-                          Wake
-                        </Typography>
-                        <Typography variant="body2">
-                          {activeData.sleep.wake_time || '-'}
-                        </Typography>
-                      </Grid>
-                    </Grid>
-                  ) : (
-                    <Typography variant="body2" color="text.secondary">
-                      No sleep data recorded.
-                    </Typography>
-                  )}
-                </CardContent>
-                <CardActions sx={{ p: 2, pt: 0, gap: 1 }}>
-                  <Button
-                    fullWidth
-                    size="small"
-                    variant="contained"
-                    color="primary"
-                    onClick={handleSyncSleep}
-                    disabled={syncing}
-                  >
-                    Sync Fit
-                  </Button>
-                  <Button
-                    fullWidth
-                    size="small"
-                    variant="contained"
-                    color="secondary"
-                    onClick={handleSyncUltrahuman}
-                    disabled={syncingUh}
-                  >
-                    Sync UH
-                  </Button>
-                </CardActions>
-              </Card>
-
-              {/* Measurements Card */}
-              <Card sx={{ ...cardStyle, flex: 1 }}>
-                <CardContent sx={{ flex: 1 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                    <MonitorWeightIcon color="success" sx={{ mr: 1 }} />
-                    <Typography variant="subtitle1" fontWeight="bold">
-                      Measurements
-                    </Typography>
-                    {activeData.measurements && (
-                      <CheckCircleIcon
-                        color="success"
-                        sx={{ ml: 'auto', fontSize: 20 }}
-                      />
-                    )}
-                  </Box>
-                  {activeData.measurements ? (
-                    <Grid container spacing={1}>
-                      {[
-                        {
-                          label: 'Weight',
-                          value: activeData.measurements.bodyweight,
-                          unit: 'kg',
-                        },
-                        {
-                          label: 'BF%',
-                          value: activeData.measurements.body_fat,
-                          unit: '%',
-                        },
-                        {
-                          label: 'VO2',
-                          value: activeData.measurements.vo2_max,
-                          unit: '',
-                        },
-                        {
-                          label: 'Chest',
-                          value: activeData.measurements.chest,
-                          unit: 'cm',
-                        },
-                        {
-                          label: 'Waist',
-                          value: activeData.measurements.waist,
-                          unit: 'cm',
-                        },
-                        {
-                          label: 'Biceps',
-                          value: activeData.measurements.biceps,
-                          unit: 'cm',
-                        },
-                        {
-                          label: 'Forearm',
-                          value: activeData.measurements.forearm,
-                          unit: 'cm',
-                        },
-                        {
-                          label: 'Calf',
-                          value: activeData.measurements.calf,
-                          unit: 'cm',
-                        },
-                        {
-                          label: 'Thigh',
-                          value: activeData.measurements.thigh,
-                          unit: 'cm',
-                        },
-                      ]
-                        .filter((m) => m.value)
-                        .map((m, idx) => (
-                          <Grid key={idx} size={3}>
-                            <Typography
-                              variant="caption"
-                              color="text.secondary"
-                              noWrap
-                              display="block"
-                              sx={{ fontSize: '0.65rem' }}
-                            >
-                              {m.label}
-                            </Typography>
-                            <Typography
-                              variant="body2"
-                              fontWeight="medium"
-                              sx={{ fontSize: '0.75rem' }}
-                            >
-                              {m.value}
-                              {m.unit}
-                            </Typography>
-                          </Grid>
-                        ))}
-                    </Grid>
-                  ) : (
-                    <Typography variant="body2" color="text.secondary">
-                      Not recorded.
-                    </Typography>
-                  )}
-                </CardContent>
-                <CardActions sx={{ p: 2, pt: 0 }}>
-                  <Button
-                    fullWidth
-                    variant="contained"
-                    startIcon={<AddIcon />}
-                    onClick={handleOpenMeasurements}
-                    aria-label="Edit measurements"
-                  >
-                    {activeData.measurements ? 'Edit' : 'Add'}
-                  </Button>
-                </CardActions>
-              </Card>
-
-              {/* Photos Card */}
-              <Card sx={{ ...cardStyle, flex: 1 }}>
-                <CardContent sx={{ flex: 1 }}>
+            {/* PHOTOS */}
+            <Grid size={{ xs: 12, md: 4 }} sx={{ display: 'flex' }}>
+              <Card sx={cardStyle}>
+                <CardContent sx={{ flex: 1, pb: 0 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                     <PhotoCameraIcon color="warning" sx={{ mr: 1 }} />
-                    <Typography variant="subtitle1" fontWeight="bold">
-                      Photos
-                    </Typography>
+                    <Typography variant="h6">Photos</Typography>
                     {activeData.hasPhotos && (
                       <CheckCircleIcon
                         color="success"
-                        sx={{ ml: 'auto', fontSize: 20 }}
+                        sx={{ ml: 'auto', fontSize: 24 }}
                       />
                     )}
                   </Box>
-                  <Typography variant="body2" color="text.secondary">
-                    {activeData.hasPhotos
-                      ? 'Daily progress captured.'
-                      : 'No photos for today.'}
-                  </Typography>
                 </CardContent>
-                <CardActions sx={{ p: 2, pt: 0, gap: 1 }}>
+                <CardActions
+                  sx={{
+                    p: 2,
+                    flex: 1,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'center',
+                    gap: 1,
+                  }}
+                >
                   <Button
                     fullWidth
                     variant="contained"
                     startIcon={<AddIcon />}
                     onClick={() => setOpenPhotos(true)}
-                    aria-label="Edit photos"
                   >
-                    {activeData.hasPhotos ? 'Edit' : 'Upload'}
+                    {activeData.hasPhotos ? 'Edit' : 'Upload'} Photos
                   </Button>
                   {activeData.hasPhotos && (
                     <Button
@@ -1341,13 +1222,14 @@ export default function Dashboard({
                         onNavigate('Photos', { date: activeDateStr })
                       }
                     >
-                      View
+                      View Progress
                     </Button>
                   )}
                 </CardActions>
               </Card>
             </Grid>
           </Grid>
+          <AiInsights data={activeData} contextType="daily health overview" />
         </Grid>
       </Grid>
 

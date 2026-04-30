@@ -33,6 +33,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import axios from '../api';
+import AiInsights from './AiInsights';
 import {
   addTrendline,
   calcDomain,
@@ -489,6 +490,10 @@ export default function Measurements() {
                 </LineChart>
               </ResponsiveContainer>
             </Box>
+            <AiInsights 
+              data={measurements.slice(0, 14)} 
+              contextType="measurements" 
+            />
           </Paper>
         </Grid>
       </Grid>
