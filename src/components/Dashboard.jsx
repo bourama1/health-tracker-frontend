@@ -606,7 +606,7 @@ export default function Dashboard({
     <Box sx={{ flexGrow: 1 }}>
       <Grid container spacing={3} sx={{ alignItems: 'stretch' }}>
         {/* Calendar Section */}
-        <Grid size={{ xs: 12, lg: 5 }} sx={{ display: 'flex' }}>
+        <Grid size={{ xs: 12, lg: 3 }} sx={{ display: 'flex' }}>
           <Paper
             sx={{
               p: 2,
@@ -799,7 +799,7 @@ export default function Dashboard({
 
         {/* Details Section */}
         <Grid
-          size={{ xs: 12, lg: 7 }}
+          size={{ xs: 12, lg: 9 }}
           sx={{ display: 'flex', flexDirection: 'column' }}
         >
           <Box
@@ -864,9 +864,8 @@ export default function Dashboard({
           </Box>
 
           <Grid container spacing={2} sx={{ flex: 1, alignItems: 'stretch' }}>
-            {/* LEFT COLUMN: WORKOUT & PHOTOS */}
-            <Grid size={{ xs: 12, md: 6 }} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              {/* WORKOUT */}
+            {/* WORKOUT */}
+            <Grid size={{ xs: 12, md: 8 }} sx={{ display: 'flex' }}>
               <Card sx={cardStyle}>
                 <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
@@ -908,8 +907,52 @@ export default function Dashboard({
                   </Button>
                 </CardActions>
               </Card>
+            </Grid>
 
-              {/* PHOTOS */}
+            {/* SLEEP */}
+            <Grid size={{ xs: 12, md: 4 }} sx={{ display: 'flex' }}>
+              <Card sx={cardStyle}>
+                <CardContent sx={{ flex: 1 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                    <BedtimeIcon color="info" sx={{ mr: 1 }} />
+                    <Typography variant="h6" fontWeight="bold">Sleep</Typography>
+                    {activeData.sleep && (
+                      <CheckCircleIcon color="success" sx={{ ml: 'auto', fontSize: 20 }} />
+                    )}
+                  </Box>
+                  {activeData.sleep ? (
+                    <Grid container spacing={1.5}>
+                      {[
+                        { label: 'Duration', value: minutesToHm((activeData.sleep.deep_sleep_minutes || 0) + (activeData.sleep.rem_sleep_minutes || 0) + (activeData.sleep.light_minutes || 0)) },
+                        { label: 'Score', value: activeData.sleep.sleep_score || '-' },
+                        { label: 'RHR', value: activeData.sleep.rhr ? `${activeData.sleep.rhr} bpm` : '-' },
+                        { label: 'Rest. %', value: activeData.sleep.restorative_sleep_percentage != null ? `${activeData.sleep.restorative_sleep_percentage}%` : '-' },
+                        { label: 'Deep', value: minutesToHm(activeData.sleep.deep_sleep_minutes) },
+                        { label: 'T&T', value: activeData.sleep.tosses_and_turns ?? '-' },
+                      ].map((item, idx) => (
+                        <Grid key={idx} size={6}>
+                          <Typography variant="caption" color="text.secondary" display="block" noWrap>
+                            {item.label}
+                          </Typography>
+                          <Typography variant="body2" fontWeight="bold">
+                            {item.value}
+                          </Typography>
+                        </Grid>
+                      ))}
+                    </Grid>
+                  ) : (
+                    <Typography variant="body2" color="text.secondary">No data.</Typography>
+                  )}
+                </CardContent>
+                <CardActions sx={{ p: 2, pt: 0, gap: 1 }}>
+                  <Button size="small" variant="outlined" onClick={handleSyncSleep} disabled={syncing} fullWidth>Sync</Button>
+                  <Button size="small" variant="outlined" color="secondary" onClick={handleSyncUltrahuman} disabled={syncingUh} fullWidth>UH</Button>
+                </CardActions>
+              </Card>
+            </Grid>
+
+            {/* PHOTOS */}
+            <Grid size={{ xs: 12, md: 4 }} sx={{ display: 'flex' }}>
               <Card sx={cardStyle}>
                 <CardContent sx={{ flex: 1 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
@@ -934,51 +977,8 @@ export default function Dashboard({
               </Card>
             </Grid>
 
-            {/* RIGHT COLUMN: SLEEP & MEASUREMENTS */}
-            <Grid size={{ xs: 12, md: 6 }} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              {/* SLEEP */}
-              <Card sx={cardStyle}>
-                <CardContent sx={{ flex: 1 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                    <BedtimeIcon color="info" sx={{ mr: 1 }} />
-                    <Typography variant="h6" fontWeight="bold">Sleep</Typography>
-                    {activeData.sleep && (
-                      <CheckCircleIcon color="success" sx={{ ml: 'auto', fontSize: 20 }} />
-                    )}
-                  </Box>
-                  {activeData.sleep ? (
-                    <Grid container spacing={1.5}>
-                      {[
-                        { label: 'Duration', value: minutesToHm((activeData.sleep.deep_sleep_minutes || 0) + (activeData.sleep.rem_sleep_minutes || 0) + (activeData.sleep.light_minutes || 0)) },
-                        { label: 'Score', value: activeData.sleep.sleep_score || '-' },
-                        { label: 'RHR', value: activeData.sleep.rhr ? `${activeData.sleep.rhr} bpm` : '-' },
-                        { label: 'HRV', value: activeData.sleep.hrv ? `${activeData.sleep.hrv} ms` : '-' },
-                        { label: 'Rest. %', value: activeData.sleep.restorative_sleep_percentage != null ? `${activeData.sleep.restorative_sleep_percentage}%` : '-' },
-                        { label: 'Deep', value: minutesToHm(activeData.sleep.deep_sleep_minutes) },
-                        { label: 'REM', value: minutesToHm(activeData.sleep.rem_sleep_minutes) },
-                        { label: 'Toss & Turn', value: activeData.sleep.tosses_and_turns ?? '-' },
-                      ].map((item, idx) => (
-                        <Grid key={idx} size={3}>
-                          <Typography variant="caption" color="text.secondary" display="block" noWrap>
-                            {item.label}
-                          </Typography>
-                          <Typography variant="body2" fontWeight="bold">
-                            {item.value}
-                          </Typography>
-                        </Grid>
-                      ))}
-                    </Grid>
-                  ) : (
-                    <Typography variant="body2" color="text.secondary">No data.</Typography>
-                  )}
-                </CardContent>
-                <CardActions sx={{ p: 2, pt: 0, gap: 1 }}>
-                  <Button size="small" variant="outlined" onClick={handleSyncSleep} disabled={syncing}>Sync Fit</Button>
-                  <Button size="small" variant="outlined" color="secondary" onClick={handleSyncUltrahuman} disabled={syncingUh}>Sync UH</Button>
-                </CardActions>
-              </Card>
-
-              {/* MEASUREMENTS */}
+            {/* MEASUREMENTS */}
+            <Grid size={{ xs: 12, md: 8 }} sx={{ display: 'flex' }}>
               <Card sx={cardStyle}>
                 <CardContent sx={{ flex: 1 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
@@ -1000,7 +1000,7 @@ export default function Dashboard({
                         { label: 'Thigh', value: activeData.measurements.thigh, unit: 'cm' },
                         { label: 'Calf', value: activeData.measurements.calf, unit: 'cm' },
                       ].filter(m => m.value).map((m, idx) => (
-                        <Grid key={idx} size={3}>
+                        <Grid key={idx} size={{ xs: 6, sm: 3 }}>
                           <Typography variant="caption" color="text.secondary" display="block" noWrap>
                             {m.label}
                           </Typography>
@@ -1015,15 +1015,15 @@ export default function Dashboard({
                   )}
                 </CardContent>
                 <CardActions sx={{ p: 2, pt: 0 }}>
-                  <Button size="small" variant="outlined" startIcon={<AddIcon />} onClick={handleOpenMeasurements}>
+                  <Button size="small" variant="outlined" startIcon={<AddIcon />} onClick={handleOpenMeasurements} fullWidth>
                     {activeData.measurements ? 'Edit' : 'Add'}
                   </Button>
                 </CardActions>
               </Card>
             </Grid>
           </Grid>
-          <AiInsights data={activeData} contextType="daily health overview" />
         </Grid>
+      </Grid>
       </Grid>
 
       {/* DIALOGS */}
