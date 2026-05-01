@@ -278,7 +278,8 @@ export default function Sleep() {
           minutesToHm(existing.awake_minutes) === '-'
             ? ''
             : minutesToHm(existing.awake_minutes),
-        restorative_sleep_percentage: existing.restorative_sleep_percentage || '',
+        restorative_sleep_percentage:
+          existing.restorative_sleep_percentage || '',
         movements: existing.movements || '',
         tosses_and_turns: existing.tosses_and_turns || '',
       }));
@@ -736,10 +737,7 @@ export default function Sleep() {
                 </LineChart>
               </ResponsiveContainer>
             </Box>
-            <AiInsights 
-              data={history.slice(-14)} 
-              contextType="sleep" 
-            />
+            <AiInsights data={history.slice(-14)} contextType="sleep" />
           </Paper>
         </Grid>
       </Grid>
@@ -951,11 +949,16 @@ export default function Sleep() {
                 <TableCell
                   align="right"
                   sx={{
-                    color: getDynamicColor('restorative_sleep_percentage', row.restorative_sleep_percentage),
+                    color: getDynamicColor(
+                      'restorative_sleep_percentage',
+                      row.restorative_sleep_percentage
+                    ),
                     fontWeight: 'bold',
                   }}
                 >
-                  {row.restorative_sleep_percentage != null ? `${row.restorative_sleep_percentage}%` : '-'}
+                  {row.restorative_sleep_percentage != null
+                    ? `${row.restorative_sleep_percentage}%`
+                    : '-'}
                 </TableCell>
                 <TableCell
                   align="right"
@@ -969,7 +972,10 @@ export default function Sleep() {
                 <TableCell
                   align="right"
                   sx={{
-                    color: getDynamicColor('tosses_and_turns', row.tosses_and_turns),
+                    color: getDynamicColor(
+                      'tosses_and_turns',
+                      row.tosses_and_turns
+                    ),
                     fontWeight: 'bold',
                   }}
                 >

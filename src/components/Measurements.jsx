@@ -490,9 +490,9 @@ export default function Measurements() {
                 </LineChart>
               </ResponsiveContainer>
             </Box>
-            <AiInsights 
-              data={measurements.slice(0, 14)} 
-              contextType="measurements" 
+            <AiInsights
+              data={measurements.slice(0, 14)}
+              contextType="measurements"
             />
           </Paper>
         </Grid>

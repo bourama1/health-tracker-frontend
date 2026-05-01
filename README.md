@@ -29,31 +29,33 @@ A comprehensive personal health and fitness dashboard built with React 19, Mater
 
 ### Installation
 
-1.  **Clone the repository**:
+1. **Clone the repository**:
 
-    ```bash
-    git clone https://github.com/your-username/health-tracker-frontend.git
-    cd health-tracker-frontend
-    ```
+   ```bash
+   git clone https://github.com/your-username/health-tracker-frontend.git
+   cd health-tracker-frontend
+   ```
 
-2.  **Install dependencies**:
+2. **Install dependencies**:
 
-    ```bash
-    npm install
-    ```
+   ```bash
+   npm install
+   ```
 
-3.  **Configure environment variables**:
-    Create a `.env` file in the root directory and add your API URL:
+3. **Configure environment variables**:
+   Create a `.env` file in the root directory and add your API URL:
 
-    ```env
-    REACT_APP_API_URL=http://localhost:5000
-    ```
+   ```env
+   REACT_APP_API_URL=http://localhost:5000
+   ```
 
-4.  **Start the development server**:
-    ```bash
-    npm start
-    ```
-    The app will be available at `http://localhost:3000`.
+4. **Start the development server**:
+
+   ```bash
+   npm start
+   ```
+
+   The app will be available at `http://localhost:3000`.
 
 ## 🧪 Running Tests
 
