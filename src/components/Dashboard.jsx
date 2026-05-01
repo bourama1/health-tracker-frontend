@@ -604,8 +604,8 @@ export default function Dashboard({
   return (
     <Box sx={{ flexGrow: 1 }}>
       <Grid container spacing={3} sx={{ alignItems: 'stretch' }}>
-        {/* Calendar Section */}
-        <Grid size={{ xs: 12, lg: 3 }} sx={{ display: 'flex' }}>
+        {/* Calendar Section - 1/2 Width */}
+        <Grid size={{ xs: 12, lg: 6 }} sx={{ display: 'flex' }}>
           <Paper
             sx={{
               p: 2,
@@ -796,9 +796,9 @@ export default function Dashboard({
           </Paper>
         </Grid>
 
-        {/* Details Section */}
+        {/* Details Section - 1/2 Width */}
         <Grid
-          size={{ xs: 12, lg: 9 }}
+          size={{ xs: 12, lg: 6 }}
           sx={{ display: 'flex', flexDirection: 'column' }}
         >
           <Box
@@ -859,31 +859,17 @@ export default function Dashboard({
                   sx={{ fontWeight: 'bold' }}
                 />
               )}
-              {activeData.sleep?.restorative_sleep_percentage != null && (
-                <Chip
-                  label={`Rest. %: ${activeData.sleep.restorative_sleep_percentage}%`}
-                  size="small"
-                  color={
-                    activeData.sleep.restorative_sleep_percentage > 40
-                      ? 'success'
-                      : activeData.sleep.restorative_sleep_percentage > 30
-                        ? 'warning'
-                        : 'error'
-                  }
-                  sx={{ fontWeight: 'bold' }}
-                />
-              )}
             </Box>
           </Box>
 
           <Grid container spacing={2} sx={{ flex: 1, alignItems: 'stretch' }}>
-            {/* LEFT COLUMN: WORKOUT & PHOTOS */}
+            {/* COLUMN 1: WORKOUT & PHOTOS (4:1 split) */}
             <Grid
-              size={{ xs: 12, md: 8 }}
+              size={{ xs: 12, md: 6 }}
               sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}
             >
-              {/* WORKOUT - Takes most space */}
-              <Card sx={{ ...cardStyle, flex: 1 }}>
+              {/* WORKOUT - 4/5 height */}
+              <Card sx={{ ...cardStyle, flex: 4 }}>
                 <CardContent
                   sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}
                 >
@@ -1009,17 +995,13 @@ export default function Dashboard({
                           : setOpenStartWorkout(true)
                     }
                   >
-                    {activeData.workout
-                      ? 'View'
-                      : activeData.scheduledWorkout
-                        ? 'Start'
-                        : 'Log'}
+                    {activeData.workout ? 'View' : 'Log'}
                   </Button>
                 </CardActions>
               </Card>
 
-              {/* PHOTOS - Very small, minimal padding */}
-              <Card sx={{ ...cardStyle, flex: 0, minHeight: 'auto' }}>
+              {/* PHOTOS - 1/5 height */}
+              <Card sx={{ ...cardStyle, flex: 1, minHeight: 'auto' }}>
                 <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
                   <Box
                     sx={{
@@ -1074,13 +1056,13 @@ export default function Dashboard({
               </Card>
             </Grid>
 
-            {/* RIGHT COLUMN: SLEEP & MEASUREMENTS */}
+            {/* COLUMN 2: SLEEP & MEASUREMENTS (1:1 split) */}
             <Grid
-              size={{ xs: 12, md: 4 }}
+              size={{ xs: 12, md: 6 }}
               sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}
             >
-              {/* SLEEP */}
-              <Card sx={cardStyle}>
+              {/* SLEEP - 1/2 height */}
+              <Card sx={{ ...cardStyle, flex: 1 }}>
                 <CardContent sx={{ flex: 1 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                     <BedtimeIcon color="info" sx={{ mr: 1 }} />
@@ -1219,8 +1201,8 @@ export default function Dashboard({
                 </CardActions>
               </Card>
 
-              {/* MEASUREMENTS */}
-              <Card sx={cardStyle}>
+              {/* MEASUREMENTS - 1/2 height */}
+              <Card sx={{ ...cardStyle, flex: 1 }}>
                 <CardContent sx={{ flex: 1 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                     <MonitorWeightIcon color="success" sx={{ mr: 1 }} />
