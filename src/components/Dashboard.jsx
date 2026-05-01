@@ -882,8 +882,8 @@ export default function Dashboard({
               size={{ xs: 12, md: 8 }}
               sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}
             >
-              {/* WORKOUT */}
-              <Card sx={cardStyle}>
+              {/* WORKOUT - Takes most space */}
+              <Card sx={{ ...cardStyle, flex: 1 }}>
                 <CardContent
                   sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}
                 >
@@ -900,7 +900,9 @@ export default function Dashboard({
                     )}
                   </Box>
                   {activeData.workout ? (
-                    <Box>
+                    <Box
+                      sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}
+                    >
                       <Typography variant="subtitle2" fontWeight="bold">
                         {activeData.workout.day_name}
                       </Typography>
@@ -925,7 +927,7 @@ export default function Dashboard({
                             activeData.workout.logs.map((l) => l.exercise_name)
                           ),
                         ]
-                          .slice(0, 4)
+                          .slice(0, 6)
                           .map((name, i) => (
                             <Chip
                               key={i}
@@ -938,7 +940,9 @@ export default function Dashboard({
                       <MuscleHighlight sessionLogs={activeData.workout.logs} />
                     </Box>
                   ) : activeData.scheduledWorkout ? (
-                    <Box>
+                    <Box
+                      sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}
+                    >
                       <Box
                         sx={{
                           display: 'flex',
@@ -965,8 +969,25 @@ export default function Dashboard({
                       />
                     </Box>
                   ) : (
-                    <Box sx={{ textAlign: 'center', py: 2 }}>
-                      <Typography variant="body2" color="text.secondary">
+                    <Box
+                      sx={{
+                        textAlign: 'center',
+                        py: 8,
+                        flex: 1,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <FitnessCenterIcon
+                        sx={{
+                          fontSize: 64,
+                          color: 'action.disabled',
+                          mb: 2,
+                          mx: 'auto',
+                        }}
+                      />
+                      <Typography variant="h6" color="text.secondary">
                         Rest Day
                       </Typography>
                     </Box>
@@ -997,53 +1018,59 @@ export default function Dashboard({
                 </CardActions>
               </Card>
 
-              {/* PHOTOS - Under Workout, compact */}
-              <Card sx={cardStyle}>
-                <CardContent sx={{ flex: 1 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                    <PhotoCameraIcon color="warning" sx={{ mr: 1 }} />
-                    <Typography variant="h6" fontWeight="bold">
-                      Photos
-                    </Typography>
-                    {activeData.hasPhotos && (
-                      <CheckCircleIcon
-                        color="success"
-                        sx={{ ml: 'auto', fontSize: 20 }}
-                      />
-                    )}
-                  </Box>
-                  <Typography variant="body2" color="text.secondary">
-                    {activeData.hasPhotos
-                      ? 'Progress captured.'
-                      : 'No photos yet.'}
-                  </Typography>
-                </CardContent>
-                <CardActions sx={{ p: 2, pt: 0, gap: 1 }}>
-                  <Button
-                    size="small"
-                    variant="outlined"
-                    startIcon={<AddIcon />}
-                    onClick={() => setOpenPhotos(true)}
-                    fullWidth
-                    aria-label="Edit photos"
+              {/* PHOTOS - Very small, minimal padding */}
+              <Card sx={{ ...cardStyle, flex: 0, minHeight: 'auto' }}>
+                <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                    }}
                   >
-                    {activeData.hasPhotos ? 'Edit' : 'Upload'}
-                  </Button>
-                  {activeData.hasPhotos && (
-                    <Button
-                      size="small"
-                      variant="contained"
-                      color="secondary"
-                      startIcon={<VisibilityIcon />}
-                      onClick={() =>
-                        onNavigate('Photos', { date: activeDateStr })
-                      }
-                      fullWidth
-                    >
-                      View
-                    </Button>
-                  )}
-                </CardActions>
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      <PhotoCameraIcon
+                        color="warning"
+                        sx={{ mr: 1, fontSize: 20 }}
+                      />
+                      <Typography variant="subtitle2" fontWeight="bold">
+                        Photos
+                      </Typography>
+                      {activeData.hasPhotos && (
+                        <CheckCircleIcon
+                          color="success"
+                          sx={{ ml: 1, fontSize: 16 }}
+                        />
+                      )}
+                    </Box>
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        startIcon={<AddIcon />}
+                        onClick={() => setOpenPhotos(true)}
+                        aria-label="Edit photos"
+                        sx={{ py: 0.5 }}
+                      >
+                        {activeData.hasPhotos ? 'Edit' : 'Upload'}
+                      </Button>
+                      {activeData.hasPhotos && (
+                        <Button
+                          size="small"
+                          variant="contained"
+                          color="secondary"
+                          startIcon={<VisibilityIcon />}
+                          onClick={() =>
+                            onNavigate('Photos', { date: activeDateStr })
+                          }
+                          sx={{ py: 0.5 }}
+                        >
+                          View
+                        </Button>
+                      )}
+                    </Box>
+                  </Box>
+                </CardContent>
               </Card>
             </Grid>
 
@@ -1068,10 +1095,10 @@ export default function Dashboard({
                     )}
                   </Box>
                   {activeData.sleep ? (
-                    <Grid container spacing={1.5}>
+                    <Grid container spacing={1}>
                       {[
                         {
-                          label: 'Duration',
+                          label: 'Total',
                           value: minutesToHm(
                             (activeData.sleep.deep_sleep_minutes || 0) +
                               (activeData.sleep.rem_sleep_minutes || 0) +
@@ -1083,9 +1110,19 @@ export default function Dashboard({
                           value: activeData.sleep.sleep_score || '-',
                         },
                         {
+                          label: 'Recovery',
+                          value: activeData.sleep.recovery_index || '-',
+                        },
+                        {
                           label: 'RHR',
                           value: activeData.sleep.rhr
                             ? `${activeData.sleep.rhr} bpm`
+                            : '-',
+                        },
+                        {
+                          label: 'HRV',
+                          value: activeData.sleep.hrv
+                            ? `${activeData.sleep.hrv} ms`
                             : '-',
                         },
                         {
@@ -1103,20 +1140,51 @@ export default function Dashboard({
                           ),
                         },
                         {
+                          label: 'REM',
+                          value: minutesToHm(
+                            activeData.sleep.rem_sleep_minutes
+                          ),
+                        },
+                        {
+                          label: 'Light',
+                          value: minutesToHm(activeData.sleep.light_minutes),
+                        },
+                        {
+                          label: 'Awake',
+                          value: minutesToHm(activeData.sleep.awake_minutes),
+                        },
+                        {
+                          label: 'Mvmnts',
+                          value: activeData.sleep.movements ?? '-',
+                        },
+                        {
                           label: 'T&T',
                           value: activeData.sleep.tosses_and_turns ?? '-',
                         },
+                        {
+                          label: 'Bed',
+                          value: activeData.sleep.bedtime || '-',
+                        },
+                        {
+                          label: 'Wake',
+                          value: activeData.sleep.wake_time || '-',
+                        },
                       ].map((item, idx) => (
-                        <Grid key={idx} size={6}>
+                        <Grid key={idx} size={4}>
                           <Typography
                             variant="caption"
                             color="text.secondary"
                             display="block"
                             noWrap
+                            sx={{ fontSize: '0.65rem' }}
                           >
                             {item.label}
                           </Typography>
-                          <Typography variant="body2" fontWeight="bold">
+                          <Typography
+                            variant="body2"
+                            fontWeight="bold"
+                            sx={{ fontSize: '0.8rem' }}
+                          >
                             {item.value}
                           </Typography>
                         </Grid>
@@ -1167,7 +1235,7 @@ export default function Dashboard({
                     )}
                   </Box>
                   {activeData.measurements ? (
-                    <Grid container spacing={1.5}>
+                    <Grid container spacing={1}>
                       {[
                         {
                           label: 'Weight',
@@ -1190,13 +1258,18 @@ export default function Dashboard({
                           unit: 'cm',
                         },
                         {
+                          label: 'Chest',
+                          value: activeData.measurements.chest,
+                          unit: 'cm',
+                        },
+                        {
                           label: 'Biceps',
                           value: activeData.measurements.biceps,
                           unit: 'cm',
                         },
                         {
-                          label: 'Chest',
-                          value: activeData.measurements.chest,
+                          label: 'Forearm',
+                          value: activeData.measurements.forearm,
                           unit: 'cm',
                         },
                         {
@@ -1212,16 +1285,21 @@ export default function Dashboard({
                       ]
                         .filter((m) => m.value)
                         .map((m, idx) => (
-                          <Grid key={idx} size={6}>
+                          <Grid key={idx} size={4}>
                             <Typography
                               variant="caption"
                               color="text.secondary"
                               display="block"
                               noWrap
+                              sx={{ fontSize: '0.65rem' }}
                             >
                               {m.label}
                             </Typography>
-                            <Typography variant="body2" fontWeight="bold">
+                            <Typography
+                              variant="body2"
+                              fontWeight="bold"
+                              sx={{ fontSize: '0.8rem' }}
+                            >
                               {m.value}
                               {m.unit}
                             </Typography>
