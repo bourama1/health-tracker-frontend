@@ -877,8 +877,12 @@ export default function Dashboard({
           </Box>
 
           <Grid container spacing={2} sx={{ flex: 1, alignItems: 'stretch' }}>
-            {/* WORKOUT */}
-            <Grid size={{ xs: 12, md: 8 }} sx={{ display: 'flex' }}>
+            {/* LEFT COLUMN: WORKOUT & PHOTOS */}
+            <Grid
+              size={{ xs: 12, md: 8 }}
+              sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}
+            >
+              {/* WORKOUT */}
               <Card sx={cardStyle}>
                 <CardContent
                   sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}
@@ -992,10 +996,63 @@ export default function Dashboard({
                   </Button>
                 </CardActions>
               </Card>
+
+              {/* PHOTOS - Under Workout, compact */}
+              <Card sx={cardStyle}>
+                <CardContent sx={{ flex: 1 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                    <PhotoCameraIcon color="warning" sx={{ mr: 1 }} />
+                    <Typography variant="h6" fontWeight="bold">
+                      Photos
+                    </Typography>
+                    {activeData.hasPhotos && (
+                      <CheckCircleIcon
+                        color="success"
+                        sx={{ ml: 'auto', fontSize: 20 }}
+                      />
+                    )}
+                  </Box>
+                  <Typography variant="body2" color="text.secondary">
+                    {activeData.hasPhotos
+                      ? 'Progress captured.'
+                      : 'No photos yet.'}
+                  </Typography>
+                </CardContent>
+                <CardActions sx={{ p: 2, pt: 0, gap: 1 }}>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    startIcon={<AddIcon />}
+                    onClick={() => setOpenPhotos(true)}
+                    fullWidth
+                    aria-label="Edit photos"
+                  >
+                    {activeData.hasPhotos ? 'Edit' : 'Upload'}
+                  </Button>
+                  {activeData.hasPhotos && (
+                    <Button
+                      size="small"
+                      variant="contained"
+                      color="secondary"
+                      startIcon={<VisibilityIcon />}
+                      onClick={() =>
+                        onNavigate('Photos', { date: activeDateStr })
+                      }
+                      fullWidth
+                    >
+                      View
+                    </Button>
+                  )}
+                </CardActions>
+              </Card>
             </Grid>
 
-            {/* SLEEP */}
-            <Grid size={{ xs: 12, md: 4 }} sx={{ display: 'flex' }}>
+            {/* RIGHT COLUMN: SLEEP & MEASUREMENTS */}
+            <Grid
+              size={{ xs: 12, md: 4 }}
+              sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}
+            >
+              {/* SLEEP */}
               <Card sx={cardStyle}>
                 <CardContent sx={{ flex: 1 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
@@ -1093,61 +1150,8 @@ export default function Dashboard({
                   </Button>
                 </CardActions>
               </Card>
-            </Grid>
 
-            {/* PHOTOS */}
-            <Grid size={{ xs: 12, md: 4 }} sx={{ display: 'flex' }}>
-              <Card sx={cardStyle}>
-                <CardContent sx={{ flex: 1 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                    <PhotoCameraIcon color="warning" sx={{ mr: 1 }} />
-                    <Typography variant="h6" fontWeight="bold">
-                      Photos
-                    </Typography>
-                    {activeData.hasPhotos && (
-                      <CheckCircleIcon
-                        color="success"
-                        sx={{ ml: 'auto', fontSize: 20 }}
-                      />
-                    )}
-                  </Box>
-                  <Typography variant="body2" color="text.secondary">
-                    {activeData.hasPhotos
-                      ? 'Progress captured.'
-                      : 'No photos yet.'}
-                  </Typography>
-                </CardContent>
-                <CardActions sx={{ p: 2, pt: 0, gap: 1 }}>
-                  <Button
-                    size="small"
-                    variant="outlined"
-                    startIcon={<AddIcon />}
-                    onClick={() => setOpenPhotos(true)}
-                    fullWidth
-                    aria-label="Edit photos"
-                  >
-                    {activeData.hasPhotos ? 'Edit' : 'Upload'}
-                  </Button>
-                  {activeData.hasPhotos && (
-                    <Button
-                      size="small"
-                      variant="contained"
-                      color="secondary"
-                      startIcon={<VisibilityIcon />}
-                      onClick={() =>
-                        onNavigate('Photos', { date: activeDateStr })
-                      }
-                      fullWidth
-                    >
-                      View
-                    </Button>
-                  )}
-                </CardActions>
-              </Card>
-            </Grid>
-
-            {/* MEASUREMENTS */}
-            <Grid size={{ xs: 12, md: 8 }} sx={{ display: 'flex' }}>
+              {/* MEASUREMENTS */}
               <Card sx={cardStyle}>
                 <CardContent sx={{ flex: 1 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
@@ -1208,7 +1212,7 @@ export default function Dashboard({
                       ]
                         .filter((m) => m.value)
                         .map((m, idx) => (
-                          <Grid key={idx} size={{ xs: 6, sm: 3 }}>
+                          <Grid key={idx} size={6}>
                             <Typography
                               variant="caption"
                               color="text.secondary"
