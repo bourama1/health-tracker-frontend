@@ -1103,6 +1103,7 @@ function ActiveWorkout({ day, onSaved, onCancel }) {
                       <TableCell>Sec</TableCell>
                     )}
                     <TableCell>RPE</TableCell>
+                    <TableCell>Note</TableCell>
                     <TableCell sx={{ width: 32 }}></TableCell>
                   </TableRow>
                 </TableHead>
@@ -1169,28 +1170,35 @@ function ActiveWorkout({ day, onSaved, onCancel }) {
                             show:
                               ex.exercise_type !== 'bodyweight' &&
                               ex.exercise_type !== 'cardio',
-                            width: 70,
+                            width: 60,
                           },
                           {
                             field: 'reps',
                             show: ex.exercise_type !== 'cardio',
-                            width: 60,
+                            width: 50,
                           },
-                          { field: 'rpe', show: true, width: 55 },
+                          { field: 'rpe', show: true, width: 45 },
+                          { field: 'notes', show: true, width: 120 },
                         ].map(
                           (input) =>
                             input.show && (
                               <TableCell key={input.field}>
                                 <TextField
                                   size="small"
-                                  type="number"
+                                  type={
+                                    input.field === 'notes' ? 'text' : 'number'
+                                  }
                                   variant="standard" // Standard variant looks cleaner in tables
                                   sx={{
                                     width: input.width,
                                     '& .MuiInputBase-input': {
                                       color: rowTextColor,
                                       fontWeight: set.completed ? 600 : 400,
-                                      textAlign: 'center',
+                                      textAlign:
+                                        input.field === 'notes'
+                                          ? 'left'
+                                          : 'center',
+                                      fontSize: '0.8rem',
                                     },
                                     '& .MuiInput-underline:before': {
                                       borderBottomColor: set.completed
@@ -1234,6 +1242,7 @@ function ActiveWorkout({ day, onSaved, onCancel }) {
                 </TableBody>
               </Table>
             </TableContainer>
+
             <Button
               size="small"
               startIcon={<AddIcon />}
@@ -1555,6 +1564,22 @@ function HistoryPanel() {
                                 />
                               )}
                             </Box>
+                            {ex.sets.some((s) => s.notes) && (
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                                display="block"
+                                sx={{ fontStyle: 'italic', ml: 1 }}
+                              >
+                                {Array.from(
+                                  new Set(
+                                    ex.sets
+                                      .filter((s) => s.notes)
+                                      .map((s) => s.notes)
+                                  )
+                                ).join('; ')}
+                              </Typography>
+                            )}
                           </TableCell>
                           <TableCell align="right">{ex.sets.length}</TableCell>
                           <TableCell align="right">
