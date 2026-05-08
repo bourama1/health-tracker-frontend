@@ -277,6 +277,11 @@ export default function Dashboard({
   const [openMeasurements, setOpenMeasurements] = useState(false);
   const [openPhotos, setOpenPhotos] = useState(false);
   const [openStartWorkout, setOpenStartWorkout] = useState(false);
+  const [scheduledIndex, setScheduledIndex] = useState(0);
+
+  useEffect(() => {
+    setScheduledIndex(0);
+  }, [activeDateStr]);
 
   const [measurementForm, setMeasurementForm] = useState({
     bodyweight: '',
@@ -362,13 +367,13 @@ export default function Dashboard({
 
     const dateObj = new Date(activeDateStr + 'T00:00:00');
     const dayName = DAYS_OF_WEEK[dateObj.getDay()];
-    let scheduledWorkout = null;
+    const scheduledWorkouts = [];
 
     plans.forEach((plan) => {
       if (plan.days) {
         plan.days.forEach((day) => {
           if (day.scheduled_days && day.scheduled_days.includes(dayName)) {
-            scheduledWorkout = { ...day, plan_name: plan.name };
+            scheduledWorkouts.push({ ...day, plan_name: plan.name });
           }
         });
       }
@@ -380,7 +385,7 @@ export default function Dashboard({
       measurements,
       workout,
       hasPhotos,
-      scheduledWorkout,
+      scheduledWorkouts,
     };
   }, [allData, activeDateStr, plans]);
 
@@ -925,34 +930,92 @@ export default function Dashboard({
                       </Box>
                       <MuscleHighlight sessionLogs={activeData.workout.logs} />
                     </Box>
-                  ) : activeData.scheduledWorkout ? (
+                  ) : activeData.scheduledWorkouts?.length > 0 ? (
                     <Box
                       sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}
                     >
-                      <Box
-                        sx={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                        }}
-                      >
-                        <Typography variant="subtitle2" fontWeight="bold">
-                          {activeData.scheduledWorkout.name}
-                        </Typography>
-                        <MuscleReadiness
-                          day={activeData.scheduledWorkout}
-                          lastTrainedMuscles={allData.lastTrainedMuscles}
-                        />
-                      </Box>
-                      <Typography
-                        variant="caption"
-                        color="primary"
-                        display="block"
-                      >
-                        Scheduled
-                      </Typography>
-                      <MuscleHighlight
-                        exercises={activeData.scheduledWorkout.exercises}
-                      />
+                      {activeData.scheduledWorkouts.length > 1 && (
+                        <Box
+                          sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            mb: 1,
+                            gap: 1,
+                            justifyContent: 'center',
+                          }}
+                        >
+                          <IconButton
+                            size="small"
+                            disabled={scheduledIndex === 0}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setScheduledIndex((prev) => prev - 1);
+                            }}
+                          >
+                            <ChevronLeftIcon fontSize="small" />
+                          </IconButton>
+                          <Typography variant="caption" fontWeight="bold">
+                            {scheduledIndex + 1} /{' '}
+                            {activeData.scheduledWorkouts.length}
+                          </Typography>
+                          <IconButton
+                            size="small"
+                            disabled={
+                              scheduledIndex ===
+                              activeData.scheduledWorkouts.length - 1
+                            }
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setScheduledIndex((prev) => prev + 1);
+                            }}
+                          >
+                            <ChevronRightIcon fontSize="small" />
+                          </IconButton>
+                        </Box>
+                      )}
+                      {(() => {
+                        const current =
+                          activeData.scheduledWorkouts[scheduledIndex] ||
+                          activeData.scheduledWorkouts[0];
+                        return (
+                          <>
+                            <Box
+                              sx={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                              }}
+                            >
+                              <Box>
+                                <Typography
+                                  variant="subtitle2"
+                                  fontWeight="bold"
+                                >
+                                  {current.name}
+                                </Typography>
+                                <Typography
+                                  variant="caption"
+                                  color="text.secondary"
+                                >
+                                  {current.plan_name}
+                                </Typography>
+                              </Box>
+                              <MuscleReadiness
+                                day={current}
+                                lastTrainedMuscles={allData.lastTrainedMuscles}
+                              />
+                            </Box>
+                            <Typography
+                              variant="caption"
+                              color="primary"
+                              display="block"
+                              sx={{ mt: 1, fontWeight: 'bold' }}
+                            >
+                              Scheduled
+                            </Typography>
+                            <MuscleHighlight exercises={current.exercises} />
+                          </>
+                        );
+                      })()}
                     </Box>
                   ) : (
                     <Box
@@ -987,9 +1050,10 @@ export default function Dashboard({
                     onClick={() =>
                       activeData.workout
                         ? onNavigate('Workouts')
-                        : activeData.scheduledWorkout
+                        : activeData.scheduledWorkouts?.length > 0
                           ? onStartWorkout(
-                              activeData.scheduledWorkout,
+                              activeData.scheduledWorkouts[scheduledIndex] ||
+                                activeData.scheduledWorkouts[0],
                               activeDateStr
                             )
                           : setOpenStartWorkout(true)

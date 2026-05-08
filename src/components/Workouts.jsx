@@ -664,6 +664,25 @@ function PlanBuilder({ onSaved, onCancel, planToEdit }) {
                     {ex.primary_muscles}
                   </Typography>
                 )}
+                {ex.notes && (
+                  <Typography
+                    variant="caption"
+                    display="block"
+                    color="primary.main"
+                    sx={{ fontWeight: 'bold' }}
+                  >
+                    {ex.notes}
+                  </Typography>
+                )}
+                {ex.rest_seconds > 0 && (
+                  <Typography
+                    variant="caption"
+                    display="block"
+                    color="text.secondary"
+                  >
+                    Rest: {ex.rest_seconds}s
+                  </Typography>
+                )}
               </Box>
               <TextField
                 label="Sets"
@@ -723,6 +742,21 @@ function PlanBuilder({ onSaved, onCancel, planToEdit }) {
                 value={ex.target_rpe || ''}
                 onChange={(e) =>
                   updateExerciseField(dIdx, eIdx, 'target_rpe', e.target.value)
+                }
+              />
+              <TextField
+                label="Rest"
+                size="small"
+                type="number"
+                sx={{ width: 60 }}
+                value={ex.rest_seconds || ''}
+                onChange={(e) =>
+                  updateExerciseField(
+                    dIdx,
+                    eIdx,
+                    'rest_seconds',
+                    e.target.value
+                  )
                 }
               />
               <Select
@@ -896,7 +930,11 @@ function ActiveWorkout({ day, onSaved, onCancel }) {
     setLogs((prev) => {
       const isCompleted = !prev[exId][setIdx].completed;
       if (isCompleted) {
-        setRestTimer({ seconds: 90 });
+        const exercise = day.exercises.find((e) => e.exercise_id === exId);
+        const rest = exercise?.rest_seconds;
+        if (rest && rest > 0) {
+          setRestTimer({ seconds: rest });
+        }
       }
       return {
         ...prev,
@@ -1070,6 +1108,22 @@ function ActiveWorkout({ day, onSaved, onCancel }) {
                       size="small"
                       label={`Suggested: ${suggestions[ex.exercise_id].suggested_weight} kg`}
                       color="primary"
+                    />
+                  )}
+                  {ex.notes && (
+                    <Chip
+                      size="small"
+                      label={ex.notes}
+                      color="secondary"
+                      variant="outlined"
+                      sx={{ fontWeight: 'bold' }}
+                    />
+                  )}
+                  {ex.rest_seconds > 0 && (
+                    <Chip
+                      size="small"
+                      label={`Rest: ${ex.rest_seconds}s`}
+                      variant="outlined"
                     />
                   )}
                 </Box>
