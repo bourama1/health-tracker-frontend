@@ -23,7 +23,6 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogContentText,
   DialogActions,
   LinearProgress,
   Tooltip,
@@ -37,6 +36,10 @@ import EditIcon from '@mui/icons-material/Edit';
 import AddIcon from '@mui/icons-material/Add';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
+import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
+import LibraryAddIcon from '@mui/icons-material/LibraryAdd';
+import SaveIcon from '@mui/icons-material/Save';
 import axios from '../api';
 import { addTrendline, calcDomain, formatDateTick } from '../utils/chartUtils';
 import {
@@ -815,42 +818,59 @@ function PlanBuilder({ onSaved, onCancel, planToEdit }) {
 
 // ─── Active Workout ───────────────────────────────────────────────────────────
 
-function ActiveWorkout({ day, onSaved, onCancel }) {
+function ActiveWorkout({ day, onSaved, onCancel, plans, onFetchPlans }) {
+  const [localExercises, setLocalExercises] = useState(day?.exercises || []);
   const [logs, setLogs] = useState(() => {
     const init = {};
-    day.exercises.forEach((ex) => {
-      init[ex.exercise_id] = Array.from({ length: ex.sets || 3 }, () => ({
-        weight: ex.weight || '',
-        reps: ex.reps || '',
-        rpe: '',
-        notes: '',
-        completed: false, // Added completed flag for tracking
-      }));
-    });
+    if (day?.exercises) {
+      day.exercises.forEach((ex) => {
+        init[ex.exercise_id] = Array.from({ length: ex.sets || 3 }, () => ({
+          weight: ex.weight || '',
+          reps: ex.reps || '',
+          duration_seconds: '',
+          rpe: '',
+          notes: '',
+          completed: false,
+        }));
+      });
+    }
     return init;
   });
   const [prevSession, setPrevSession] = useState(null);
-  const [restTimer, setRestTimer] = useState(null); // { seconds }
+  const [restTimer, setRestTimer] = useState(null);
   const [sessionNotes, setSessionNotes] = useState('');
-  const [progressEx, setProgressEx] = useState(null); // { id, name }
+  const [progressEx, setProgressEx] = useState(null);
   const [suggestions, setSuggestions] = useState({});
   const [templateUpdate, setTemplateUpdate] = useState(null);
+  const [openLibrary, setOpenLibrary] = useState(false);
+  const [saveAsTemplate, setSaveAsTemplate] = useState(false);
+  const [newPlanName, setNewPlanName] = useState('');
+  const [saveAsMode, setSaveAsMode] = useState('new'); // 'new' or 'existing'
+  const [selectedPlanId, setSelectedPlanId] = useState('');
+  const [newDayName, setNewDayName] = useState('Day 1');
+  const [sessionName, setSessionName] = useState(day?.name || '');
+  const [selectedDate, setSelectedDate] = useState(
+    day?.selectedDate || new Date().toISOString().split('T')[0]
+  );
 
   useEffect(() => {
-    axios
-      .get(`/api/workouts/sessions/last-for-day/${day.id}`)
-      .then((r) => {
-        setPrevSession(r.data);
-        if (r.data?.notes) {
-          setSessionNotes(r.data.notes);
-        }
-      })
-      .catch(() => {});
-  }, [day.id]);
+    if (day?.id) {
+      axios
+        .get(`/api/workouts/sessions/last-for-day/${day.id}`)
+        .then((r) => {
+          setPrevSession(r.data);
+          if (r.data?.notes) {
+            setSessionNotes(r.data.notes);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [day?.id]);
 
   useEffect(() => {
     const fetchLastPerformance = async () => {
-      const exerciseIds = day.exercises.map((ex) => ex.exercise_id).join(',');
+      if (localExercises.length === 0) return;
+      const exerciseIds = localExercises.map((ex) => ex.exercise_id).join(',');
       try {
         const response = await axios.get(
           `/api/workouts/sessions/last-performance?exercise_ids=${exerciseIds}`
@@ -859,19 +879,32 @@ function ActiveWorkout({ day, onSaved, onCancel }) {
 
         setLogs((prev) => {
           const newLogs = { ...prev };
-          day.exercises.forEach((ex) => {
+          localExercises.forEach((ex) => {
+            if (newLogs[ex.exercise_id]) return; // Don't override if already has logs
+
             const perf = lastPerf[ex.exercise_id];
             if (perf && perf.length > 0) {
-              // Use the number of sets from the last performance,
-              // or the template if it has more sets
               const numSets = Math.max(perf.length, ex.sets || 0);
               newLogs[ex.exercise_id] = Array.from(
                 { length: numSets },
                 (_, i) => ({
                   weight: perf[i]?.weight ?? (ex.weight || ''),
                   reps: perf[i]?.reps ?? (ex.reps || ''),
+                  duration_seconds: perf[i]?.duration_seconds ?? '',
                   rpe: perf[i]?.rpe ?? '',
                   notes: perf[i]?.notes ?? '',
+                  completed: false,
+                })
+              );
+            } else if (!newLogs[ex.exercise_id]) {
+              newLogs[ex.exercise_id] = Array.from(
+                { length: ex.sets || 3 },
+                () => ({
+                  weight: ex.weight || '',
+                  reps: ex.reps || '',
+                  duration_seconds: '',
+                  rpe: '',
+                  notes: '',
                   completed: false,
                 })
               );
@@ -884,10 +917,11 @@ function ActiveWorkout({ day, onSaved, onCancel }) {
       }
     };
     fetchLastPerformance();
-  }, [day.exercises]);
+  }, [localExercises]);
 
   useEffect(() => {
-    day.exercises.forEach((ex) => {
+    localExercises.forEach((ex) => {
+      if (suggestions[ex.exercise_id]) return;
       const targetReps = ex.reps_max || ex.reps_min || ex.reps || 8;
       const targetRPE = ex.target_rpe || 8;
       axios
@@ -902,7 +936,55 @@ function ActiveWorkout({ day, onSaved, onCancel }) {
         })
         .catch(() => {});
     });
-  }, [day.exercises]);
+  }, [localExercises, suggestions]);
+
+  const addExercise = (ex) => {
+    const exerciseId = ex.id || ex.exercise_id;
+    if (localExercises.find((le) => le.exercise_id === exerciseId)) {
+      alert('Exercise already added');
+      return;
+    }
+    const newEx = {
+      exercise_id: exerciseId,
+      name: ex.name,
+      primary_muscles: ex.primary_muscles,
+      sets: 3,
+      reps: 10,
+      weight: 0,
+      exercise_type: ex.category === 'cardio' ? 'cardio' : 'weighted',
+    };
+    setLocalExercises((prev) => [...prev, newEx]);
+    setLogs((prev) => ({
+      ...prev,
+      [exerciseId]: Array.from({ length: 3 }, () => ({
+        weight: '',
+        reps: '',
+        duration_seconds: '',
+        rpe: '',
+        notes: '',
+        completed: false,
+      })),
+    }));
+    setOpenLibrary(false);
+  };
+
+  const moveExercise = (index, direction) => {
+    const newExercises = [...localExercises];
+    const newIndex = index + direction;
+    if (newIndex < 0 || newIndex >= newExercises.length) return;
+    const [moved] = newExercises.splice(index, 1);
+    newExercises.splice(newIndex, 0, moved);
+    setLocalExercises(newExercises);
+  };
+
+  const removeExerciseFromWorkout = (exId) => {
+    setLocalExercises((prev) => prev.filter((ex) => ex.exercise_id !== exId));
+    setLogs((prev) => {
+      const newLogs = { ...prev };
+      delete newLogs[exId];
+      return newLogs;
+    });
+  };
 
   const prevMap = useCallback(
     (exerciseId) => {
@@ -930,7 +1012,7 @@ function ActiveWorkout({ day, onSaved, onCancel }) {
     setLogs((prev) => {
       const isCompleted = !prev[exId][setIdx].completed;
       if (isCompleted) {
-        const exercise = day.exercises.find((e) => e.exercise_id === exId);
+        const exercise = localExercises.find((e) => e.exercise_id === exId);
         const rest = exercise?.rest_seconds;
         if (rest && rest > 0) {
           setRestTimer({ seconds: rest });
@@ -950,7 +1032,14 @@ function ActiveWorkout({ day, onSaved, onCancel }) {
       ...prev,
       [exId]: [
         ...prev[exId],
-        { weight: '', reps: '', rpe: '', notes: '', completed: false },
+        {
+          weight: '',
+          reps: '',
+          duration_seconds: '',
+          rpe: '',
+          notes: '',
+          completed: false,
+        },
       ],
     }));
   };
@@ -966,58 +1055,140 @@ function ActiveWorkout({ day, onSaved, onCancel }) {
     const flatLogs = [];
     Object.keys(logs).forEach((exId) => {
       logs[exId].forEach((set, i) => {
-        if (set.weight !== '' || set.reps !== '') {
+        if (
+          set.weight !== '' ||
+          set.reps !== '' ||
+          set.duration_seconds !== '' ||
+          set.rpe !== '' ||
+          set.notes !== ''
+        ) {
           flatLogs.push({
             exercise_id: exId,
             set_number: i + 1,
             weight: set.weight !== '' ? parseFloat(set.weight) : null,
             reps: set.reps !== '' ? parseInt(set.reps) : null,
+            duration_seconds:
+              set.duration_seconds !== ''
+                ? parseInt(set.duration_seconds)
+                : null,
             rpe: set.rpe !== '' ? parseFloat(set.rpe) : null,
             notes: set.notes || null,
           });
         }
       });
     });
+
+    if (flatLogs.length === 0) {
+      alert('No data to save');
+      return;
+    }
+
     try {
       await axios.post('/api/workouts/sessions', {
-        day_id: day.id,
-        date: day.selectedDate || new Date().toISOString().split('T')[0],
+        day_id: day?.id || null,
+        date: selectedDate,
+        name: sessionName || null,
         notes: sessionNotes || null,
         logs: flatLogs,
       });
 
-      // After saving session, check for differences to suggest template update
-      const newDayExercises = day.exercises.map((ex) => {
-        const sessionSets = logs[ex.exercise_id].filter(
-          (s) => s.weight !== '' || s.reps !== ''
-        );
-        if (sessionSets.length === 0) return ex;
-
-        const firstSet = sessionSets[0];
-        return {
-          ...ex,
-          sets: sessionSets.length,
-          weight: firstSet.weight !== '' ? firstSet.weight : ex.weight,
-          reps: firstSet.reps !== '' ? firstSet.reps : ex.reps,
-        };
-      });
-
-      const hasChanges = newDayExercises.some((ex, i) => {
-        const orig = day.exercises[i];
-        return (
-          parseInt(ex.sets) !== parseInt(orig.sets) ||
-          parseFloat(ex.weight) !== parseFloat(orig.weight) ||
-          parseInt(ex.reps) !== parseInt(orig.reps)
-        );
-      });
-
-      if (hasChanges) {
-        setTemplateUpdate(newDayExercises);
+      if (!day?.id) {
+        // Ad-hoc workout, ask to save as template
+        setSaveAsTemplate(true);
       } else {
-        onSaved();
+        // Check for template updates
+        const newDayExercises = localExercises.map((ex) => {
+          const sessionSets = logs[ex.exercise_id].filter(
+            (s) => s.weight !== '' || s.reps !== ''
+          );
+          if (sessionSets.length === 0) return ex;
+
+          const firstSet = sessionSets[0];
+          return {
+            ...ex,
+            sets: sessionSets.length,
+            weight: firstSet.weight !== '' ? firstSet.weight : ex.weight,
+            reps: firstSet.reps !== '' ? firstSet.reps : ex.reps,
+          };
+        });
+
+        const hasChanges = newDayExercises.some((ex, i) => {
+          const orig = day.exercises[i];
+          if (!orig) return true;
+          return (
+            parseInt(ex.sets) !== parseInt(orig.sets) ||
+            parseFloat(ex.weight) !== parseFloat(orig.weight) ||
+            parseInt(ex.reps) !== parseInt(orig.reps)
+          );
+        });
+
+        if (hasChanges || localExercises.length !== day.exercises.length) {
+          setTemplateUpdate(newDayExercises);
+        } else {
+          onSaved();
+        }
       }
     } catch {
       alert('Failed to save session');
+    }
+  };
+
+  const handleCreateNewPlan = async () => {
+    if (saveAsMode === 'new' && !newPlanName) {
+      alert('Please enter a name for the plan');
+      return;
+    }
+    if (saveAsMode === 'existing' && !selectedPlanId) {
+      alert('Please select a plan');
+      return;
+    }
+
+    try {
+      const planExercises = localExercises.map((ex) => {
+        const sessionSets = logs[ex.exercise_id].filter(
+          (s) => s.weight !== '' || s.reps !== '' || s.duration_seconds !== ''
+        );
+        const firstSet = sessionSets[0] || {};
+        return {
+          exercise_id: ex.exercise_id,
+          sets: sessionSets.length || 3,
+          reps: firstSet.reps || 10,
+          weight: firstSet.weight || 0,
+          exercise_type: ex.exercise_type || 'weighted',
+        };
+      });
+
+      if (saveAsMode === 'new') {
+        await axios.post('/api/workouts/plans', {
+          name: newPlanName,
+          days: [
+            {
+              name: newDayName || 'Day 1',
+              exercises: planExercises,
+            },
+          ],
+        });
+      } else {
+        // Add to existing
+        const { data: existingPlan } = await axios.get(
+          `/api/workouts/plans/${selectedPlanId}`
+        );
+        const updatedPlan = {
+          ...existingPlan,
+          days: [
+            ...existingPlan.days,
+            {
+              name: newDayName || `Day ${existingPlan.days.length + 1}`,
+              exercises: planExercises,
+            },
+          ],
+        };
+        await axios.put(`/api/workouts/plans/${selectedPlanId}`, updatedPlan);
+      }
+      if (onFetchPlans) await onFetchPlans();
+      onSaved();
+    } catch (err) {
+      alert('Failed to save plan: ' + err.message);
     }
   };
 
@@ -1029,7 +1200,7 @@ function ActiveWorkout({ day, onSaved, onCancel }) {
       onSaved();
     } catch {
       alert('Failed to update template');
-      onSaved(); // Still close session even if template update failed
+      onSaved();
     }
   };
 
@@ -1041,21 +1212,43 @@ function ActiveWorkout({ day, onSaved, onCancel }) {
           justifyContent: 'space-between',
           alignItems: 'center',
           mb: 2,
+          flexWrap: 'wrap',
+          gap: 2,
         }}
       >
-        <Typography variant="h6" color="primary">
-          {day.name} —{' '}
-          {day.selectedDate
-            ? new Date(day.selectedDate + 'T00:00:00').toLocaleDateString()
-            : new Date().toLocaleDateString()}
-        </Typography>
-        {prevSession && (
-          <Chip
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <TextField
+            label="Session Name"
             size="small"
-            label={`Prev: ${prevSession.date}`}
-            variant="outlined"
+            value={sessionName}
+            onChange={(e) => setSessionName(e.target.value)}
+            sx={{ width: 200 }}
           />
-        )}
+          <TextField
+            type="date"
+            size="small"
+            value={selectedDate}
+            onChange={(e) => setSelectedDate(e.target.value)}
+            sx={{ width: 150 }}
+          />
+        </Box>
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          <Button
+            variant="outlined"
+            size="small"
+            startIcon={<LibraryAddIcon />}
+            onClick={() => setOpenLibrary(true)}
+          >
+            Add Exercise
+          </Button>
+          {prevSession && (
+            <Chip
+              size="small"
+              label={`Prev: ${prevSession.date}`}
+              variant="outlined"
+            />
+          )}
+        </Box>
       </Box>
 
       {restTimer && (
@@ -1071,7 +1264,22 @@ function ActiveWorkout({ day, onSaved, onCancel }) {
         </Paper>
       )}
 
-      {day.exercises.map((ex) => {
+      {localExercises.length === 0 && (
+        <Paper sx={{ p: 4, textAlign: 'center', mb: 2 }} variant="outlined">
+          <Typography color="text.secondary">
+            Empty workout. Add some exercises to get started!
+          </Typography>
+          <Button
+            sx={{ mt: 2 }}
+            startIcon={<AddIcon />}
+            onClick={() => setOpenLibrary(true)}
+          >
+            Browse Library
+          </Button>
+        </Paper>
+      )}
+
+      {localExercises.map((ex, idx) => {
         const prev = prevMap(ex.exercise_id);
         return (
           <Paper key={ex.exercise_id} sx={{ p: 2, mb: 2 }} variant="outlined">
@@ -1083,59 +1291,86 @@ function ActiveWorkout({ day, onSaved, onCancel }) {
                 mb: 1,
               }}
             >
-              <Box>
-                <Typography variant="subtitle1" fontWeight="bold">
-                  {ex.name}
-                </Typography>
-                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                  {ex.reps_min && (
-                    <Chip
-                      size="small"
-                      label={`Target: ${ex.reps_min}${ex.reps_max ? '-' + ex.reps_max : ''} reps`}
-                      variant="outlined"
-                    />
-                  )}
-                  {ex.target_rpe && (
-                    <Chip
-                      size="small"
-                      label={`Target RPE: ${ex.target_rpe}`}
-                      color="info"
-                      variant="outlined"
-                    />
-                  )}
-                  {suggestions[ex.exercise_id]?.suggested_weight && (
-                    <Chip
-                      size="small"
-                      label={`Suggested: ${suggestions[ex.exercise_id].suggested_weight} kg`}
-                      color="primary"
-                    />
-                  )}
-                  {ex.notes && (
-                    <Chip
-                      size="small"
-                      label={ex.notes}
-                      color="secondary"
-                      variant="outlined"
-                      sx={{ fontWeight: 'bold' }}
-                    />
-                  )}
-                  {ex.rest_seconds > 0 && (
-                    <Chip
-                      size="small"
-                      label={`Rest: ${ex.rest_seconds}s`}
-                      variant="outlined"
-                    />
-                  )}
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                  <IconButton
+                    size="small"
+                    disabled={idx === 0}
+                    onClick={() => moveExercise(idx, -1)}
+                  >
+                    <ArrowUpwardIcon fontSize="inherit" />
+                  </IconButton>
+                  <IconButton
+                    size="small"
+                    disabled={idx === localExercises.length - 1}
+                    onClick={() => moveExercise(idx, 1)}
+                  >
+                    <ArrowDownwardIcon fontSize="inherit" />
+                  </IconButton>
+                </Box>
+                <Box>
+                  <Typography variant="subtitle1" fontWeight="bold">
+                    {ex.name}
+                  </Typography>
+                  <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                    {(ex.reps_min || ex.reps_max) && (
+                      <Chip
+                        size="small"
+                        label={`Target: ${ex.reps_min || 0}${ex.reps_max ? '-' + ex.reps_max : ''} reps`}
+                        variant="outlined"
+                      />
+                    )}
+                    {ex.target_rpe && (
+                      <Chip
+                        size="small"
+                        label={`Target RPE: ${ex.target_rpe}`}
+                        color="info"
+                        variant="outlined"
+                      />
+                    )}
+                    {suggestions[ex.exercise_id]?.suggested_weight && (
+                      <Chip
+                        size="small"
+                        label={`Suggested: ${suggestions[ex.exercise_id].suggested_weight} kg`}
+                        color="primary"
+                      />
+                    )}
+                    {ex.notes && (
+                      <Chip
+                        size="small"
+                        label={ex.notes}
+                        color="secondary"
+                        variant="outlined"
+                        sx={{ fontWeight: 'bold' }}
+                      />
+                    )}
+                    {ex.rest_seconds > 0 && (
+                      <Chip
+                        size="small"
+                        label={`Rest: ${ex.rest_seconds}s`}
+                        variant="outlined"
+                      />
+                    )}
+                  </Box>
                 </Box>
               </Box>
-              <IconButton
-                size="small"
-                onClick={() =>
-                  setProgressEx({ id: ex.exercise_id, name: ex.name })
-                }
-              >
-                <TrendingUpIcon fontSize="small" />
-              </IconButton>
+              <Box>
+                <IconButton
+                  size="small"
+                  onClick={() =>
+                    setProgressEx({ id: ex.exercise_id, name: ex.name })
+                  }
+                >
+                  <TrendingUpIcon fontSize="small" />
+                </IconButton>
+                <IconButton
+                  size="small"
+                  color="error"
+                  onClick={() => removeExerciseFromWorkout(ex.exercise_id)}
+                >
+                  <DeleteIcon fontSize="small" />
+                </IconButton>
+              </Box>
             </Box>
 
             <TableContainer>
@@ -1154,7 +1389,7 @@ function ActiveWorkout({ day, onSaved, onCancel }) {
                       <TableCell>Reps</TableCell>
                     )}
                     {ex.exercise_type === 'cardio' && (
-                      <TableCell>Sec</TableCell>
+                      <TableCell>Time</TableCell>
                     )}
                     <TableCell>RPE</TableCell>
                     <TableCell>Note</TableCell>
@@ -1164,8 +1399,6 @@ function ActiveWorkout({ day, onSaved, onCancel }) {
                 <TableBody>
                   {logs[ex.exercise_id]?.map((set, i) => {
                     const p = prev[i + 1];
-
-                    // Use theme-aware colors: success.main for completed, text.primary for active
                     const rowTextColor = set.completed
                       ? 'success.main'
                       : 'text.primary';
@@ -1177,7 +1410,6 @@ function ActiveWorkout({ day, onSaved, onCancel }) {
                       <TableRow
                         key={i}
                         sx={{
-                          // alpha(color, 0.1) creates a subtle tint that works in both light and dark modes
                           bgcolor: set.completed
                             ? (theme) => alpha(theme.palette.success.main, 0.15)
                             : 'inherit',
@@ -1218,6 +1450,87 @@ function ActiveWorkout({ day, onSaved, onCancel }) {
                           </TableCell>
                         )}
 
+                        {ex.exercise_type === 'cardio' && (
+                          <TableCell>
+                            <Box
+                              sx={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 0.5,
+                              }}
+                            >
+                              <TextField
+                                size="small"
+                                type="number"
+                                variant="standard"
+                                placeholder="m"
+                                sx={{
+                                  width: 30,
+                                  '& .MuiInputBase-input': {
+                                    color: rowTextColor,
+                                    fontWeight: set.completed ? 600 : 400,
+                                    textAlign: 'center',
+                                    fontSize: '0.8rem',
+                                  },
+                                }}
+                                value={
+                                  Math.floor(
+                                    (parseInt(set.duration_seconds) || 0) / 60
+                                  ) || ''
+                                }
+                                onChange={(e) => {
+                                  const mins = parseInt(e.target.value) || 0;
+                                  const secs =
+                                    (parseInt(set.duration_seconds) || 0) % 60;
+                                  handleChange(
+                                    ex.exercise_id,
+                                    i,
+                                    'duration_seconds',
+                                    mins * 60 + secs
+                                  );
+                                }}
+                              />
+                              <Typography
+                                variant="caption"
+                                sx={{ color: rowTextColor }}
+                              >
+                                :
+                              </Typography>
+                              <TextField
+                                size="small"
+                                type="number"
+                                variant="standard"
+                                placeholder="s"
+                                sx={{
+                                  width: 30,
+                                  '& .MuiInputBase-input': {
+                                    color: rowTextColor,
+                                    fontWeight: set.completed ? 600 : 400,
+                                    textAlign: 'center',
+                                    fontSize: '0.8rem',
+                                  },
+                                }}
+                                value={
+                                  (parseInt(set.duration_seconds) || 0) % 60 ||
+                                  ''
+                                }
+                                onChange={(e) => {
+                                  const mins = Math.floor(
+                                    (parseInt(set.duration_seconds) || 0) / 60
+                                  );
+                                  const secs = parseInt(e.target.value) || 0;
+                                  handleChange(
+                                    ex.exercise_id,
+                                    i,
+                                    'duration_seconds',
+                                    mins * 60 + secs
+                                  );
+                                }}
+                              />
+                            </Box>
+                          </TableCell>
+                        )}
+
                         {[
                           {
                             field: 'weight',
@@ -1242,7 +1555,7 @@ function ActiveWorkout({ day, onSaved, onCancel }) {
                                   type={
                                     input.field === 'notes' ? 'text' : 'number'
                                   }
-                                  variant="standard" // Standard variant looks cleaner in tables
+                                  variant="standard"
                                   sx={{
                                     width: input.width,
                                     '& .MuiInputBase-input': {
@@ -1253,15 +1566,6 @@ function ActiveWorkout({ day, onSaved, onCancel }) {
                                           ? 'left'
                                           : 'center',
                                       fontSize: '0.8rem',
-                                    },
-                                    '& .MuiInput-underline:before': {
-                                      borderBottomColor: set.completed
-                                        ? (theme) =>
-                                            alpha(
-                                              theme.palette.success.main,
-                                              0.4
-                                            )
-                                        : 'inherit',
                                     },
                                   }}
                                   value={set[input.field]}
@@ -1300,8 +1604,8 @@ function ActiveWorkout({ day, onSaved, onCancel }) {
             <Button
               size="small"
               startIcon={<AddIcon />}
-              sx={{ mt: 1 }}
               onClick={() => addSet(ex.exercise_id)}
+              sx={{ mt: 1 }}
             >
               Add Set
             </Button>
@@ -1309,92 +1613,159 @@ function ActiveWorkout({ day, onSaved, onCancel }) {
         );
       })}
 
-      <TextField
-        fullWidth
-        multiline
-        rows={2}
-        label="Session notes (optional)"
-        value={sessionNotes}
-        onChange={(e) => setSessionNotes(e.target.value)}
-        sx={{ mb: 2 }}
-      />
+      <Paper sx={{ p: 2, mb: 2 }} variant="outlined">
+        <Typography variant="subtitle2" gutterBottom>
+          Workout Notes
+        </Typography>
+        <TextField
+          multiline
+          rows={2}
+          fullWidth
+          placeholder="How did it go?"
+          value={sessionNotes}
+          onChange={(e) => setSessionNotes(e.target.value)}
+        />
+      </Paper>
 
-      <Box sx={{ display: 'flex', gap: 2 }}>
-        <Button variant="contained" fullWidth onClick={handleSave}>
-          Finish & Save
+      <Box sx={{ display: 'flex', gap: 2, mt: 3 }}>
+        <Button
+          variant="contained"
+          size="large"
+          fullWidth
+          onClick={handleSave}
+          startIcon={<SaveIcon />}
+        >
+          Finish Workout
         </Button>
-        <Button variant="outlined" onClick={onCancel}>
+        <Button variant="text" size="large" onClick={onCancel}>
           Cancel
         </Button>
       </Box>
 
-      {progressEx && (
-        <ProgressDialog
-          exerciseId={progressEx.id}
-          exerciseName={progressEx.name}
-          open={!!progressEx}
-          onClose={() => setProgressEx(null)}
-        />
-      )}
-
+      {/* Exercise Library Dialog */}
       <Dialog
-        open={!!templateUpdate}
-        onClose={() => onSaved()}
-        aria-labelledby="template-update-dialog-title"
+        open={openLibrary}
+        onClose={() => setOpenLibrary(false)}
+        maxWidth="lg"
+        fullWidth
       >
-        <DialogTitle id="template-update-dialog-title">
-          Update Workout Template?
-        </DialogTitle>
+        <DialogTitle>Add Exercise to Workout</DialogTitle>
+        <DialogContent dividers sx={{ p: 0 }}>
+          <ExerciseLibrary onAddExercise={addExercise} showAdd={true} />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenLibrary(false)}>Close</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Save as Template Dialog */}
+      <Dialog
+        open={saveAsTemplate}
+        onClose={() => onSaved()}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle>Workout Finished!</DialogTitle>
         <DialogContent>
-          <DialogContentText>
-            You made changes to the number of sets, weights, or reps during this
-            session. Would you like to save these changes as the new template
-            for <strong>{day.name}</strong>?
-          </DialogContentText>
-          <Box sx={{ mt: 2 }}>
-            {templateUpdate &&
-              templateUpdate
-                .filter((ex, i) => {
-                  const orig = day.exercises[i];
-                  return (
-                    parseInt(ex.sets) !== parseInt(orig.sets) ||
-                    parseFloat(ex.weight) !== parseFloat(orig.weight) ||
-                    parseInt(ex.reps) !== parseInt(orig.reps)
-                  );
-                })
-                .map((ex, i) => {
-                  const orig = day.exercises.find(
-                    (o) => o.exercise_id === ex.exercise_id
-                  );
-                  return (
-                    <Typography key={i} variant="body2" color="text.secondary">
-                      • <strong>{ex.name}</strong>: {orig.sets}×{orig.weight}kg
-                      → {ex.sets}×{ex.weight}kg
-                    </Typography>
-                  );
-                })}
+          <Typography gutterBottom variant="body2">
+            Would you like to save this workout as a template?
+          </Typography>
+
+          <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <Select
+              size="small"
+              value={saveAsMode}
+              onChange={(e) => setSaveAsMode(e.target.value)}
+              fullWidth
+            >
+              <MenuItem value="new">Create New Plan</MenuItem>
+              <MenuItem value="existing">Add to Existing Plan</MenuItem>
+            </Select>
+
+            {saveAsMode === 'new' ? (
+              <TextField
+                autoFocus
+                label="Plan Name"
+                fullWidth
+                size="small"
+                value={newPlanName}
+                onChange={(e) => setNewPlanName(e.target.value)}
+                placeholder="e.g. My Custom Leg Day"
+              />
+            ) : (
+              <Select
+                size="small"
+                value={selectedPlanId}
+                onChange={(e) => setSelectedPlanId(e.target.value)}
+                fullWidth
+                displayEmpty
+              >
+                <MenuItem value="" disabled>
+                  Select a Plan
+                </MenuItem>
+                {plans?.map((p) => (
+                  <MenuItem key={p.id} value={p.id}>
+                    {p.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            )}
+
+            <TextField
+              label="Day Name"
+              fullWidth
+              size="small"
+              value={newDayName}
+              onChange={(e) => setNewDayName(e.target.value)}
+              placeholder="e.g. Day 1 or Leg Day"
+            />
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => onSaved()} color="inherit">
-            No, keep original
-          </Button>
+          <Button onClick={() => onSaved()}>No, thanks</Button>
           <Button
-            onClick={handleUpdateTemplate}
+            onClick={handleCreateNewPlan}
             color="primary"
             variant="contained"
-            autoFocus
+            disabled={saveAsMode === 'new' ? !newPlanName : !selectedPlanId}
           >
-            Yes, update template
+            Save Plan
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Progress Dialog */}
+      <ProgressDialog
+        open={!!progressEx}
+        onClose={() => setProgressEx(null)}
+        exerciseId={progressEx?.id}
+        exerciseName={progressEx?.name}
+      />
+
+      {/* Template Update Confirmation */}
+      <Dialog open={!!templateUpdate} onClose={() => onSaved()}>
+        <DialogTitle>Update Plan?</DialogTitle>
+        <DialogContent>
+          <Typography>
+            You made some changes to the default sets/reps/weight or exercise
+            list. Would you like to update your workout plan template with these
+            new values?
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => onSaved()}>No</Button>
+          <Button
+            onClick={handleUpdateTemplate}
+            variant="contained"
+            color="primary"
+          >
+            Update Template
           </Button>
         </DialogActions>
       </Dialog>
     </Box>
   );
 }
-
-// ─── Stats Panel ──────────────────────────────────────────────────────────────
-
 function StatsPanel() {
   const [stats, setStats] = useState(null);
   useEffect(() => {
@@ -1545,13 +1916,16 @@ function HistoryPanel() {
                 }}
               >
                 <Typography sx={{ flexGrow: 1 }}>
-                  {session.date} — {session.day_name}
+                  {session.date} —{' '}
+                  {session.session_custom_name || session.day_name}
                 </Typography>
-                <Chip
-                  label={session.plan_name}
-                  size="small"
-                  variant="outlined"
-                />
+                {session.plan_name && (
+                  <Chip
+                    label={session.plan_name}
+                    size="small"
+                    variant="outlined"
+                  />
+                )}
                 {exerciseSummary.some((e) => e.hasPR) && (
                   <Tooltip title="Personal Record!">
                     <EmojiEventsIcon fontSize="small" color="warning" />
@@ -1730,6 +2104,8 @@ export default function Workouts({
           setTab(1);
         }}
         onCancel={() => handleActiveDayChange(null)}
+        plans={plans}
+        onFetchPlans={fetchPlans}
       />
     );
   }
@@ -1778,9 +2154,24 @@ export default function Workouts({
         <Grid container spacing={3}>
           <Grid size={{ xs: 12, md: 5 }}>
             <Paper sx={{ p: 2 }}>
-              <Typography variant="h6" gutterBottom>
-                Select Plan
-              </Typography>
+              <Box
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  mb: 1,
+                }}
+              >
+                <Typography variant="h6">Select Plan</Typography>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  startIcon={<AddIcon />}
+                  onClick={() => handleActiveDayChange({ name: 'Ad-hoc' })}
+                >
+                  Empty Workout
+                </Button>
+              </Box>
               {plans.length === 0 && (
                 <Typography color="text.secondary">
                   No plans yet. Create one to get started.

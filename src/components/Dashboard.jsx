@@ -895,16 +895,19 @@ export default function Dashboard({
                       sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}
                     >
                       <Typography variant="subtitle2" fontWeight="bold">
-                        {activeData.workout.day_name}
+                        {activeData.workout.session_custom_name ||
+                          activeData.workout.day_name}
                       </Typography>
-                      <Typography
-                        variant="caption"
-                        color="text.secondary"
-                        gutterBottom
-                        display="block"
-                      >
-                        {activeData.workout.plan_name}
-                      </Typography>
+                      {activeData.workout.plan_name && (
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          gutterBottom
+                          display="block"
+                        >
+                          {activeData.workout.plan_name}
+                        </Typography>
+                      )}
                       <Box
                         sx={{
                           display: 'flex',

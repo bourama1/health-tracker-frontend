@@ -116,14 +116,14 @@ describe('Workouts Component', () => {
     fireEvent.click(await screen.findByText('Test Plan'));
     fireEvent.click(await screen.findByText('Day 1'));
 
-    expect(await screen.findByText(/Day 1 — /i)).toBeInTheDocument();
+    expect(await screen.findByDisplayValue('Day 1')).toBeInTheDocument();
 
     // Weight, Reps, RPE for Set 1
     const inputs = screen.getAllByRole('spinbutton');
     fireEvent.change(inputs[0], { target: { value: '60' } }); // weight
     fireEvent.change(inputs[1], { target: { value: '12' } }); // reps
 
-    const finishBtn = screen.getByText(/Finish & Save/i);
+    const finishBtn = screen.getByText(/Finish Workout/i);
     fireEvent.click(finishBtn);
 
     await waitFor(() => {
