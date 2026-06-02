@@ -878,17 +878,50 @@ export default function Dashboard({
                 <CardContent
                   sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}
                 >
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                    <FitnessCenterIcon color="primary" sx={{ mr: 1 }} />
-                    <Typography variant="h6" fontWeight="bold">
-                      Workout
-                    </Typography>
-                    {activeData.workout && (
-                      <CheckCircleIcon
-                        color="success"
-                        sx={{ ml: 'auto', fontSize: 20 }}
-                      />
-                    )}
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      mb: 2,
+                    }}
+                  >
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      <FitnessCenterIcon color="primary" sx={{ mr: 1 }} />
+                      <Typography variant="h6" fontWeight="bold">
+                        Workout
+                      </Typography>
+                      {activeData.workout && (
+                        <CheckCircleIcon
+                          color="success"
+                          sx={{ ml: 1, fontSize: 20 }}
+                        />
+                      )}
+                    </Box>
+                    <Button
+                      size="small"
+                      variant="contained"
+                      onClick={() =>
+                        activeData.workout
+                          ? onNavigate('Workouts')
+                          : activeData.scheduledWorkouts?.length > 0
+                            ? onStartWorkout(
+                                activeData.scheduledWorkouts[scheduledIndex] ||
+                                  activeData.scheduledWorkouts[0],
+                                activeDateStr
+                              )
+                            : setOpenStartWorkout(true)
+                      }
+                      startIcon={
+                        activeData.workout ? <VisibilityIcon /> : <AddIcon />
+                      }
+                    >
+                      {activeData.workout
+                        ? 'View'
+                        : activeData.scheduledWorkouts?.length > 0
+                          ? 'Start'
+                          : 'Log'}
+                    </Button>
                   </Box>
                   {activeData.workout ? (
                     <Box
@@ -1045,26 +1078,6 @@ export default function Dashboard({
                     </Box>
                   )}
                 </CardContent>
-                <CardActions sx={{ p: 2, pt: 0 }}>
-                  <Button
-                    size="small"
-                    variant="contained"
-                    fullWidth
-                    onClick={() =>
-                      activeData.workout
-                        ? onNavigate('Workouts')
-                        : activeData.scheduledWorkouts?.length > 0
-                          ? onStartWorkout(
-                              activeData.scheduledWorkouts[scheduledIndex] ||
-                                activeData.scheduledWorkouts[0],
-                              activeDateStr
-                            )
-                          : setOpenStartWorkout(true)
-                    }
-                  >
-                    {activeData.workout ? 'View' : 'Log'}
-                  </Button>
-                </CardActions>
               </Card>
 
               {/* PHOTOS - 1/5 height */}
@@ -1131,17 +1144,45 @@ export default function Dashboard({
               {/* SLEEP - 1/2 height */}
               <Card sx={{ ...cardStyle, flex: 1 }}>
                 <CardContent sx={{ flex: 1 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                    <BedtimeIcon color="info" sx={{ mr: 1 }} />
-                    <Typography variant="h6" fontWeight="bold">
-                      Sleep
-                    </Typography>
-                    {activeData.sleep && (
-                      <CheckCircleIcon
-                        color="success"
-                        sx={{ ml: 'auto', fontSize: 20 }}
-                      />
-                    )}
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      mb: 2,
+                    }}
+                  >
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      <BedtimeIcon color="info" sx={{ mr: 1 }} />
+                      <Typography variant="h6" fontWeight="bold">
+                        Sleep
+                      </Typography>
+                      {activeData.sleep && (
+                        <CheckCircleIcon
+                          color="success"
+                          sx={{ ml: 1, fontSize: 20 }}
+                        />
+                      )}
+                    </Box>
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        onClick={handleSyncSleep}
+                        disabled={syncing}
+                      >
+                        Fit
+                      </Button>
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        color="secondary"
+                        onClick={handleSyncUltrahuman}
+                        disabled={syncingUh}
+                      >
+                        UH
+                      </Button>
+                    </Box>
                   </Box>
                   {activeData.sleep ? (
                     <Grid container spacing={1}>
@@ -1245,43 +1286,40 @@ export default function Dashboard({
                     </Typography>
                   )}
                 </CardContent>
-                <CardActions sx={{ p: 2, pt: 0, gap: 1 }}>
-                  <Button
-                    size="small"
-                    variant="outlined"
-                    onClick={handleSyncSleep}
-                    disabled={syncing}
-                    fullWidth
-                  >
-                    Sync Fit
-                  </Button>
-                  <Button
-                    size="small"
-                    variant="outlined"
-                    color="secondary"
-                    onClick={handleSyncUltrahuman}
-                    disabled={syncingUh}
-                    fullWidth
-                  >
-                    Sync UH
-                  </Button>
-                </CardActions>
               </Card>
 
               {/* MEASUREMENTS - 1/2 height */}
               <Card sx={{ ...cardStyle, flex: 1 }}>
                 <CardContent sx={{ flex: 1 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                    <MonitorWeightIcon color="success" sx={{ mr: 1 }} />
-                    <Typography variant="h6" fontWeight="bold">
-                      Measurements
-                    </Typography>
-                    {activeData.measurements && (
-                      <CheckCircleIcon
-                        color="success"
-                        sx={{ ml: 'auto', fontSize: 20 }}
-                      />
-                    )}
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      mb: 2,
+                    }}
+                  >
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      <MonitorWeightIcon color="success" sx={{ mr: 1 }} />
+                      <Typography variant="h6" fontWeight="bold">
+                        Measurements
+                      </Typography>
+                      {activeData.measurements && (
+                        <CheckCircleIcon
+                          color="success"
+                          sx={{ ml: 1, fontSize: 20 }}
+                        />
+                      )}
+                    </Box>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      startIcon={<AddIcon />}
+                      onClick={handleOpenMeasurements}
+                      aria-label="Edit measurements"
+                    >
+                      {activeData.measurements ? 'Edit' : 'Add'}
+                    </Button>
                   </Box>
                   {activeData.measurements ? (
                     <Grid container spacing={1}>
@@ -1361,18 +1399,6 @@ export default function Dashboard({
                     </Typography>
                   )}
                 </CardContent>
-                <CardActions sx={{ p: 2, pt: 0 }}>
-                  <Button
-                    size="small"
-                    variant="outlined"
-                    startIcon={<AddIcon />}
-                    onClick={handleOpenMeasurements}
-                    fullWidth
-                    aria-label="Edit measurements"
-                  >
-                    {activeData.measurements ? 'Edit' : 'Add'}
-                  </Button>
-                </CardActions>
               </Card>
             </Grid>
           </Grid>
