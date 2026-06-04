@@ -1005,7 +1005,7 @@ export default function Sleep() {
                   }}
                 >
                   {minutesToHm(row.deep_sleep_minutes)}
-                </TableCell>{' '}
+                </TableCell>
                 <TableCell
                   align="right"
                   sx={{

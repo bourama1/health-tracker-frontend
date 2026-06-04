@@ -154,7 +154,7 @@ function MuscleHighlight({ exercises, sessionLogs }) {
               ? ['#1a237e', '#0d47a1', '#1565c0', '#1e88e5', '#42a5f5']
               : ['#e3f2fd', '#90caf9', '#42a5f5', '#1e88e5', '#1565c0']
           }
-          scale={0.9}
+          scale={0.8}
           theme={theme.palette.mode}
         />
       </Box>
@@ -1169,8 +1169,9 @@ export default function Dashboard({
                         variant="outlined"
                         onClick={handleSyncSleep}
                         disabled={syncing}
+                        aria-label="Sync Fit"
                       >
-                        Fit
+                        Sync Fit
                       </Button>
                       <Button
                         size="small"
@@ -1178,8 +1179,9 @@ export default function Dashboard({
                         color="secondary"
                         onClick={handleSyncUltrahuman}
                         disabled={syncingUh}
+                        aria-label="Sync UH"
                       >
-                        UH
+                        Sync UH
                       </Button>
                     </Box>
                   </Box>
