@@ -762,6 +762,25 @@ function PlanBuilder({ onSaved, onCancel, planToEdit }) {
                   )
                 }
               />
+              <TextField
+                label="Tempo"
+                size="small"
+                sx={{ width: 80 }}
+                placeholder="3010"
+                value={ex.tempo || ''}
+                onChange={(e) =>
+                  updateExerciseField(dIdx, eIdx, 'tempo', e.target.value)
+                }
+              />
+              <TextField
+                label="Notes"
+                size="small"
+                sx={{ width: 120 }}
+                value={ex.notes || ''}
+                onChange={(e) =>
+                  updateExerciseField(dIdx, eIdx, 'notes', e.target.value)
+                }
+              />
               <Select
                 size="small"
                 sx={{ width: 115 }}
@@ -830,6 +849,7 @@ function ActiveWorkout({ day, onSaved, onCancel, plans, onFetchPlans }) {
           duration_seconds: '',
           rpe: '',
           notes: '',
+          tempo: ex.tempo || '',
           completed: false,
         }));
       });
@@ -962,6 +982,7 @@ function ActiveWorkout({ day, onSaved, onCancel, plans, onFetchPlans }) {
         duration_seconds: '',
         rpe: '',
         notes: '',
+        tempo: '',
         completed: false,
       })),
     }));
@@ -1038,6 +1059,7 @@ function ActiveWorkout({ day, onSaved, onCancel, plans, onFetchPlans }) {
           duration_seconds: '',
           rpe: '',
           notes: '',
+          tempo: '',
           completed: false,
         },
       ],
@@ -1060,7 +1082,8 @@ function ActiveWorkout({ day, onSaved, onCancel, plans, onFetchPlans }) {
           set.reps !== '' ||
           set.duration_seconds !== '' ||
           set.rpe !== '' ||
-          set.notes !== ''
+          set.notes !== '' ||
+          set.tempo !== ''
         ) {
           flatLogs.push({
             exercise_id: exId,
@@ -1073,6 +1096,7 @@ function ActiveWorkout({ day, onSaved, onCancel, plans, onFetchPlans }) {
                 : null,
             rpe: set.rpe !== '' ? parseFloat(set.rpe) : null,
             notes: set.notes || null,
+            tempo: set.tempo || null,
           });
         }
       });
@@ -1155,6 +1179,12 @@ function ActiveWorkout({ day, onSaved, onCancel, plans, onFetchPlans }) {
           reps: firstSet.reps || 10,
           weight: firstSet.weight || 0,
           exercise_type: ex.exercise_type || 'weighted',
+          target_rpe: ex.target_rpe || null,
+          reps_min: ex.reps_min || null,
+          reps_max: ex.reps_max || null,
+          notes: ex.notes || null,
+          rest_seconds: ex.rest_seconds || null,
+          tempo: ex.tempo || null,
         };
       });
 
@@ -1328,6 +1358,14 @@ function ActiveWorkout({ day, onSaved, onCancel, plans, onFetchPlans }) {
                         variant="outlined"
                       />
                     )}
+                    {ex.tempo && (
+                      <Chip
+                        size="small"
+                        label={`Tempo: ${ex.tempo}`}
+                        variant="outlined"
+                        color="warning"
+                      />
+                    )}
                     {suggestions[ex.exercise_id]?.suggested_weight && (
                       <Chip
                         size="small"
@@ -1391,6 +1429,7 @@ function ActiveWorkout({ day, onSaved, onCancel, plans, onFetchPlans }) {
                     {ex.exercise_type === 'cardio' && (
                       <TableCell>Time</TableCell>
                     )}
+                    <TableCell>Tempo</TableCell>
                     <TableCell>RPE</TableCell>
                     <TableCell>Note</TableCell>
                     <TableCell sx={{ width: 32 }}></TableCell>
@@ -1544,6 +1583,7 @@ function ActiveWorkout({ day, onSaved, onCancel, plans, onFetchPlans }) {
                             show: ex.exercise_type !== 'cardio',
                             width: 50,
                           },
+                          { field: 'tempo', show: true, width: 60 },
                           { field: 'rpe', show: true, width: 45 },
                           { field: 'notes', show: true, width: 120 },
                         ].map(
