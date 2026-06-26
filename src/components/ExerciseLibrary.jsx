@@ -584,7 +584,7 @@ export default function ExerciseLibrary({ onAddExercise, showAdd = false }) {
   const totalPages = Math.ceil(exercises.length / PAGE_SIZE);
 
   return (
-    <Box>
+    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'auto' }}>
       {/* Search + filter bar */}
       <Box
         sx={{

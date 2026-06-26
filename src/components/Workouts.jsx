@@ -2164,13 +2164,14 @@ export default function Workouts({
   }
 
   return (
-    <Box sx={{ flexGrow: 1 }}>
+    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'auto' }}>
       <Box
         sx={{
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
           mb: 2,
+          flexShrink: 0,
         }}
       >
         <Typography variant="h4">Workout Tracking</Typography>

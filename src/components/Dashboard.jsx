@@ -31,6 +31,7 @@ import MonitorWeightIcon from '@mui/icons-material/MonitorWeight';
 import PhotoCameraIcon from '@mui/icons-material/PhotoCamera';
 import BedtimeIcon from '@mui/icons-material/Bedtime';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import PsychologyIcon from '@mui/icons-material/Psychology';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import Body from '../vendor/body-highlighter';
@@ -100,50 +101,66 @@ function MuscleHighlight({ exercises, sessionLogs }) {
   return (
     <Box
       sx={{
-        mt: 2,
+        mt: 1,
         textAlign: 'center',
         flex: 1,
         display: 'flex',
         flexDirection: 'column',
+        minHeight: 0,
       }}
     >
-      <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-        Muscles Worked Intensity
-      </Typography>
-      <ToggleButtonGroup
-        value={view}
-        exclusive
-        onChange={(_, v) => v && setView(v)}
-        size="small"
-        sx={{
-          mb: 1,
-          '& .MuiToggleButton-root': {
-            borderColor: 'divider',
-            '&.Mui-selected': {
-              bgcolor: 'primary.main',
-              color: 'primary.contrastText',
-              '&:hover': {
-                bgcolor: 'primary.dark',
-              },
-            },
-          },
-        }}
-      >
-        <ToggleButton value="front" sx={{ px: 1, py: 0.2, fontSize: '0.7rem' }}>
-          Front
-        </ToggleButton>
-        <ToggleButton value="back" sx={{ px: 1, py: 0.2, fontSize: '0.7rem' }}>
-          Back
-        </ToggleButton>
-      </ToggleButtonGroup>
       <Box
         sx={{
-          width: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 1,
+          mb: 0.5,
+          flexShrink: 0,
+        }}
+      >
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          sx={{ fontSize: '0.65rem' }}
+        >
+          Muscles
+        </Typography>
+        <ToggleButtonGroup
+          value={view}
+          exclusive
+          onChange={(_, v) => v && setView(v)}
+          size="small"
+          sx={{
+            '& .MuiToggleButton-root': {
+              borderColor: 'divider',
+              py: 0,
+              px: 0.8,
+              fontSize: '0.6rem',
+              lineHeight: 1.2,
+              '&.Mui-selected': {
+                bgcolor: 'primary.main',
+                color: 'primary.contrastText',
+                '&:hover': {
+                  bgcolor: 'primary.dark',
+                },
+              },
+            },
+          }}
+        >
+          <ToggleButton value="front">Front</ToggleButton>
+          <ToggleButton value="back">Back</ToggleButton>
+        </ToggleButtonGroup>
+      </Box>
+      <Box
+        sx={{
           flex: 1,
-          minHeight: 200,
+          minHeight: 0,
           mx: 'auto',
           display: 'flex',
           justifyContent: 'center',
+          alignItems: 'center',
+          width: '100%',
         }}
       >
         <Body
@@ -154,7 +171,7 @@ function MuscleHighlight({ exercises, sessionLogs }) {
               ? ['#1a237e', '#0d47a1', '#1565c0', '#1e88e5', '#42a5f5']
               : ['#e3f2fd', '#90caf9', '#42a5f5', '#1e88e5', '#1565c0']
           }
-          scale={0.8}
+          scale={1}
           theme={theme.palette.mode}
         />
       </Box>
@@ -262,6 +279,7 @@ export default function Dashboard({
     sessions: [],
     photoDates: [],
     lastTrainedMuscles: {},
+    mentalHealth: [],
   });
   const [plans, setPlans] = useState([]);
   const [syncing, setSyncing] = useState(false);
@@ -276,7 +294,17 @@ export default function Dashboard({
   const [openMeasurements, setOpenMeasurements] = useState(false);
   const [openPhotos, setOpenPhotos] = useState(false);
   const [openStartWorkout, setOpenStartWorkout] = useState(false);
+  const [openMentalHealth, setOpenMentalHealth] = useState(false);
   const [scheduledIndex, setScheduledIndex] = useState(0);
+
+  const [mentalHealthForm, setMentalHealthForm] = useState({
+    energy: '',
+    mood: '',
+    composure: '',
+    physicality: '',
+    connectivity: '',
+    notes: '',
+  });
 
   useEffect(() => {
     setScheduledIndex(0);
@@ -311,6 +339,7 @@ export default function Dashboard({
         planRes,
         photoRes,
         lastTrainedRes,
+        mentalHealthRes,
       ] = await Promise.all([
         axios.get('/api/sleep'),
         axios.get('/api/activity'),
@@ -319,6 +348,7 @@ export default function Dashboard({
         axios.get('/api/workouts/plans'),
         axios.get('/api/photos/dates'),
         axios.get('/api/workouts/last-trained-muscles'),
+        axios.get('/api/mental-health'),
       ]);
 
       setAllData({
@@ -328,6 +358,7 @@ export default function Dashboard({
         sessions: sessionRes.data,
         photoDates: photoRes.data.map((d) => d.date),
         lastTrainedMuscles: lastTrainedRes.data,
+        mentalHealth: mentalHealthRes.data,
       });
       setPlans(planRes.data);
     } catch (error) {
@@ -363,6 +394,9 @@ export default function Dashboard({
     );
     const workout = allData.sessions.find((s) => s.date === activeDateStr);
     const hasPhotos = allData.photoDates.includes(activeDateStr);
+    const mentalHealth = allData.mentalHealth.find(
+      (m) => m.date === activeDateStr
+    );
 
     const dateObj = new Date(activeDateStr + 'T00:00:00');
     const dayName = DAYS_OF_WEEK[dateObj.getDay()];
@@ -385,6 +419,7 @@ export default function Dashboard({
       workout,
       hasPhotos,
       scheduledWorkouts,
+      mentalHealth,
     };
   }, [allData, activeDateStr, plans]);
 
@@ -445,6 +480,49 @@ export default function Dashboard({
       });
     }
     setOpenMeasurements(true);
+  };
+
+  const handleOpenMentalHealth = () => {
+    if (activeData.mentalHealth) {
+      setMentalHealthForm({
+        energy: activeData.mentalHealth.energy ?? '',
+        mood: activeData.mentalHealth.mood ?? '',
+        composure: activeData.mentalHealth.composure ?? '',
+        physicality: activeData.mentalHealth.physicality ?? '',
+        connectivity: activeData.mentalHealth.connectivity ?? '',
+        notes: activeData.mentalHealth.notes ?? '',
+      });
+    } else {
+      setMentalHealthForm({
+        energy: '',
+        mood: '',
+        composure: '',
+        physicality: '',
+        connectivity: '',
+        notes: '',
+      });
+    }
+    setOpenMentalHealth(true);
+  };
+
+  const handleMentalHealthToggle = (metric) => (_, newValue) => {
+    if (newValue !== null) {
+      setMentalHealthForm((prev) => ({ ...prev, [metric]: newValue }));
+    }
+  };
+
+  const handleMentalHealthSave = async () => {
+    try {
+      await axios.post('/api/mental-health', {
+        ...mentalHealthForm,
+        date: activeDateStr,
+      });
+      showSnackbar('Mental health entry saved');
+      setOpenMentalHealth(false);
+      fetchData();
+    } catch (error) {
+      showSnackbar('Failed to save', 'error');
+    }
   };
 
   const isMeasurementDirty = () => {
@@ -567,6 +645,7 @@ export default function Dashboard({
         hasMeasurements: allData.measurements.some((m) => m.date === dateStr),
         hasWorkout: allData.sessions.some((s) => s.date === dateStr),
         hasPhotos: allData.photoDates.includes(dateStr),
+        hasMentalHealth: allData.mentalHealth.some((m) => m.date === dateStr),
         activity: allData.activity.find((a) => a.date === dateStr),
       });
     }
@@ -606,10 +685,10 @@ export default function Dashboard({
   };
 
   return (
-    <Box sx={{ flexGrow: 1 }}>
-      <Grid container spacing={3} sx={{ alignItems: 'stretch' }}>
+    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0 }}>
+      <Grid container spacing={3} sx={{ flex: 1, overflow: 'hidden', alignItems: 'stretch', minHeight: 0 }}>
         {/* Calendar Section - 1/2 Width */}
-        <Grid size={{ xs: 12, lg: 6 }} sx={{ display: 'flex' }}>
+        <Grid size={{ xs: 12, lg: 6 }} sx={{ display: 'flex', overflow: 'hidden' }}>
           <Paper
             sx={{
               p: 2,
@@ -618,6 +697,7 @@ export default function Dashboard({
               flexDirection: 'column',
               borderRadius: 2,
               flex: 1,
+              overflow: 'auto',
             }}
           >
             <Box
@@ -728,40 +808,38 @@ export default function Dashboard({
 
                     <Box
                       sx={{
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(2, 1fr)',
-                        gap: 0.5,
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        justifyContent: 'center',
+                        gap: 0.3,
                         mt: 'auto',
                         mb: 0.5,
                       }}
                     >
-                      {d.hasSleep ? (
+                      {d.hasSleep && (
                         <BedtimeIcon
-                          sx={{ fontSize: 18, color: 'info.main' }}
+                          sx={{ fontSize: 16, color: 'info.main' }}
                         />
-                      ) : (
-                        <Box sx={{ width: 18, height: 18 }} />
                       )}
-                      {d.hasWorkout ? (
+                      {d.hasWorkout && (
                         <FitnessCenterIcon
-                          sx={{ fontSize: 18, color: 'error.main' }}
+                          sx={{ fontSize: 16, color: 'error.main' }}
                         />
-                      ) : (
-                        <Box sx={{ width: 18, height: 18 }} />
                       )}
-                      {d.hasMeasurements ? (
+                      {d.hasMeasurements && (
                         <MonitorWeightIcon
-                          sx={{ fontSize: 18, color: 'success.main' }}
+                          sx={{ fontSize: 16, color: 'success.main' }}
                         />
-                      ) : (
-                        <Box sx={{ width: 18, height: 18 }} />
                       )}
-                      {d.hasPhotos ? (
+                      {d.hasPhotos && (
                         <PhotoCameraIcon
-                          sx={{ fontSize: 18, color: 'warning.main' }}
+                          sx={{ fontSize: 16, color: 'warning.main' }}
                         />
-                      ) : (
-                        <Box sx={{ width: 18, height: 18 }} />
+                      )}
+                      {d.hasMentalHealth && (
+                        <PsychologyIcon
+                          sx={{ fontSize: 16, color: 'secondary.main' }}
+                        />
                       )}
                     </Box>
                   </Paper>
@@ -796,6 +874,12 @@ export default function Dashboard({
                 <PhotoCameraIcon sx={{ fontSize: 16, color: 'warning.main' }} />
                 <Typography variant="caption">Photos</Typography>
               </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <PsychologyIcon
+                  sx={{ fontSize: 16, color: 'secondary.main' }}
+                />
+                <Typography variant="caption">Mental</Typography>
+              </Box>
             </Box>
           </Paper>
         </Grid>
@@ -803,7 +887,7 @@ export default function Dashboard({
         {/* Details Section - 1/2 Width */}
         <Grid
           size={{ xs: 12, lg: 6 }}
-          sx={{ display: 'flex', flexDirection: 'column' }}
+          sx={{ display: 'flex', flexDirection: 'column', overflow: 'auto' }}
         >
           <Box
             sx={{
@@ -1403,6 +1487,120 @@ export default function Dashboard({
               </Card>
             </Grid>
           </Grid>
+
+          {/* Mental Health Card - Full Width */}
+          <Box sx={{ mt: 2 }}>
+            <Card sx={{ ...cardStyle }}>
+              <CardContent>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    mb: 2,
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <PsychologyIcon color="secondary" sx={{ mr: 1 }} />
+                    <Typography variant="h6" fontWeight="bold">
+                      Mental Health
+                    </Typography>
+                    {activeData.mentalHealth && (
+                      <CheckCircleIcon
+                        color="success"
+                        sx={{ ml: 1, fontSize: 20 }}
+                      />
+                    )}
+                  </Box>
+                  <Box sx={{ display: 'flex', gap: 1 }}>
+                    <Button
+                      size="small"
+                      variant="contained"
+                      onClick={handleOpenMentalHealth}
+                      startIcon={
+                        activeData.mentalHealth ? undefined : <AddIcon />
+                      }
+                    >
+                      {activeData.mentalHealth ? 'Edit' : 'Check In'}
+                    </Button>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      onClick={() => onNavigate('Mental Health')}
+                    >
+                      View All
+                    </Button>
+                  </Box>
+                </Box>
+                {activeData.mentalHealth ? (
+                  <Grid container spacing={1}>
+                    {[
+                      {
+                        key: 'energy',
+                        label: 'Energy',
+                        value: activeData.mentalHealth.energy,
+                      },
+                      {
+                        key: 'mood',
+                        label: 'Mood',
+                        value: activeData.mentalHealth.mood,
+                      },
+                      {
+                        key: 'composure',
+                        label: 'Composure',
+                        value: activeData.mentalHealth.composure,
+                      },
+                      {
+                        key: 'physicality',
+                        label: 'Physicality',
+                        value: activeData.mentalHealth.physicality,
+                      },
+                      {
+                        key: 'connectivity',
+                        label: 'Connectivity',
+                        value: activeData.mentalHealth.connectivity,
+                      },
+                    ].map((m) => {
+                      const val = m.value;
+                      const label =
+                        val === -1 ? 'Low' : val === 1 ? 'High' : 'Balanced';
+                      const color =
+                        val === -1
+                          ? 'error.main'
+                          : val === 1
+                            ? 'warning.main'
+                            : 'success.main';
+                      return (
+                        <Grid key={m.key} size={12 / 5}>
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            display="block"
+                            noWrap
+                            sx={{ fontSize: '0.65rem' }}
+                          >
+                            {m.label}
+                          </Typography>
+                          <Typography
+                            variant="body2"
+                            fontWeight="bold"
+                            color={color}
+                            sx={{ fontSize: '0.8rem' }}
+                          >
+                            {label}
+                          </Typography>
+                        </Grid>
+                      );
+                    })}
+                  </Grid>
+                ) : (
+                  <Typography variant="body2" color="text.secondary">
+                    No data. Check in daily to track your mental health.
+                  </Typography>
+                )}
+              </CardContent>
+            </Card>
+          </Box>
         </Grid>
       </Grid>
 
@@ -1536,6 +1734,115 @@ export default function Dashboard({
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpenStartWorkout(false)}>Cancel</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Mental Health Check-In Dialog */}
+      <Dialog
+        open={openMentalHealth}
+        onClose={() => setOpenMentalHealth(false)}
+        fullWidth
+        maxWidth="xs"
+      >
+        <DialogTitle sx={{ pb: 1 }}>
+          Mental Health Check-In
+          <Typography variant="caption" display="block" color="text.secondary">
+            {new Date(activeDateStr + 'T00:00:00').toLocaleDateString('en-US', {
+              weekday: 'long',
+              month: 'short',
+              day: 'numeric',
+            })}
+          </Typography>
+        </DialogTitle>
+        <DialogContent sx={{ pt: 1 }}>
+          {[
+            { key: 'energy', label: 'Energy' },
+            { key: 'mood', label: 'Mood' },
+            { key: 'composure', label: 'Composure' },
+            { key: 'physicality', label: 'Physicality' },
+            { key: 'connectivity', label: 'Connectivity' },
+          ].map((m) => (
+            <Box key={m.key} sx={{ mb: 1.5 }}>
+              <Typography
+                variant="caption"
+                fontWeight="bold"
+                sx={{ mb: 0.5, display: 'block' }}
+              >
+                {m.label}
+              </Typography>
+              <ToggleButtonGroup
+                value={mentalHealthForm[m.key]}
+                exclusive
+                onChange={handleMentalHealthToggle(m.key)}
+                size="small"
+                fullWidth
+              >
+                <ToggleButton
+                  value={-1}
+                  sx={{
+                    flex: 1,
+                    py: 0.5,
+                    fontSize: '0.75rem',
+                    '&.Mui-selected': {
+                      bgcolor: 'error.main',
+                      color: '#fff',
+                      '&:hover': { bgcolor: 'error.dark' },
+                    },
+                  }}
+                >
+                  Low
+                </ToggleButton>
+                <ToggleButton
+                  value={0}
+                  sx={{
+                    flex: 1,
+                    py: 0.5,
+                    fontSize: '0.75rem',
+                    '&.Mui-selected': {
+                      bgcolor: 'success.main',
+                      color: '#fff',
+                      '&:hover': { bgcolor: 'success.dark' },
+                    },
+                  }}
+                >
+                  Balanced
+                </ToggleButton>
+                <ToggleButton
+                  value={1}
+                  sx={{
+                    flex: 1,
+                    py: 0.5,
+                    fontSize: '0.75rem',
+                    '&.Mui-selected': {
+                      bgcolor: 'warning.main',
+                      color: '#fff',
+                      '&:hover': { bgcolor: 'warning.dark' },
+                    },
+                  }}
+                >
+                  High
+                </ToggleButton>
+              </ToggleButtonGroup>
+            </Box>
+          ))}
+          <TextField
+            fullWidth
+            label="Notes"
+            size="small"
+            value={mentalHealthForm.notes}
+            onChange={(e) =>
+              setMentalHealthForm((prev) => ({
+                ...prev,
+                notes: e.target.value,
+              }))
+            }
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenMentalHealth(false)}>Cancel</Button>
+          <Button onClick={handleMentalHealthSave} variant="contained">
+            Save
+          </Button>
         </DialogActions>
       </Dialog>
 

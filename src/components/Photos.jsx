@@ -303,9 +303,9 @@ export default function Photos({ initialDate, onDateChange }) {
   }
 
   return (
-    <Box sx={{ flexGrow: 1 }}>
+    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'auto' }}>
       <Typography variant="h4" gutterBottom>
-        Progress Photos (Cloudinary)
+        Progress Photos
       </Typography>
 
       <Grid container spacing={3}>

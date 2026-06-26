@@ -406,13 +406,14 @@ export default function Sleep() {
   }
 
   return (
-    <Box sx={{ flexGrow: 1 }}>
+    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'auto' }}>
       <Box
         sx={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           mb: 2,
+          flexShrink: 0,
         }}
       >
         <Typography variant="h4">Sleep Analysis</Typography>

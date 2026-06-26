@@ -29,11 +29,13 @@ import DashboardIcon from '@mui/icons-material/Dashboard';
 import Brightness4Icon from '@mui/icons-material/Brightness4';
 import Brightness7Icon from '@mui/icons-material/Brightness7';
 import GoogleIcon from '@mui/icons-material/Google';
+import PsychologyIcon from '@mui/icons-material/Psychology';
 import Measurements from './components/Measurements';
 import Photos from './components/Photos';
 import Sleep from './components/Sleep';
 import Workouts from './components/Workouts';
 import Dashboard from './components/Dashboard';
+import MentalHealth from './components/MentalHealth';
 
 const drawerWidth = 240;
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
@@ -146,6 +148,8 @@ export default function App() {
         );
       case 'Sleep':
         return <Sleep />;
+      case 'Mental Health':
+        return <MentalHealth />;
       default:
         return <Typography variant="h4">Welcome</Typography>;
     }
@@ -157,6 +161,7 @@ export default function App() {
     { text: 'Measurements', icon: <StraightenIcon /> },
     { text: 'Photos', icon: <PhotoCameraIcon /> },
     { text: 'Sleep', icon: <BedtimeIcon /> },
+    { text: 'Mental Health', icon: <PsychologyIcon /> },
   ];
 
   if (isCheckingAuth) {
@@ -236,7 +241,7 @@ export default function App() {
 
   return (
     <ThemeProvider theme={theme}>
-      <Box sx={{ display: 'flex' }}>
+      <Box sx={{ display: 'flex', height: '100vh' }}>
         <CssBaseline />
         <AppBar
           position="fixed"
@@ -306,10 +311,12 @@ export default function App() {
             <Divider />
           </Box>
         </Drawer>
-        <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
+        <Box component="main" sx={{ flexGrow: 1, p: 3, overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
           <Toolbar />
           {/* Active Component renders here */}
-          {renderContent()}
+          <Box sx={{ flex: 1, minHeight: 0 }}>
+            {renderContent()}
+          </Box>
         </Box>
       </Box>
     </ThemeProvider>
