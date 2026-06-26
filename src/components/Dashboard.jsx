@@ -32,6 +32,7 @@ import PhotoCameraIcon from '@mui/icons-material/PhotoCamera';
 import BedtimeIcon from '@mui/icons-material/Bedtime';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import PsychologyIcon from '@mui/icons-material/Psychology';
+import RestaurantIcon from '@mui/icons-material/Restaurant';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import Body from '../vendor/body-highlighter';
@@ -280,6 +281,7 @@ export default function Dashboard({
     photoDates: [],
     lastTrainedMuscles: {},
     mentalHealth: [],
+    nutrition: [],
   });
   const [plans, setPlans] = useState([]);
   const [syncing, setSyncing] = useState(false);
@@ -340,6 +342,7 @@ export default function Dashboard({
         photoRes,
         lastTrainedRes,
         mentalHealthRes,
+        nutritionRes,
       ] = await Promise.all([
         axios.get('/api/sleep'),
         axios.get('/api/activity'),
@@ -349,6 +352,7 @@ export default function Dashboard({
         axios.get('/api/photos/dates'),
         axios.get('/api/workouts/last-trained-muscles'),
         axios.get('/api/mental-health'),
+        axios.get('/api/nutrition/summary'),
       ]);
 
       setAllData({
@@ -359,6 +363,7 @@ export default function Dashboard({
         photoDates: photoRes.data.map((d) => d.date),
         lastTrainedMuscles: lastTrainedRes.data,
         mentalHealth: mentalHealthRes.data,
+        nutrition: nutritionRes.data,
       });
       setPlans(planRes.data);
     } catch (error) {
@@ -369,22 +374,37 @@ export default function Dashboard({
     }
   }, []);
 
+  // Load saved MFP username
+  const [mfpUsername, setMfpUsername] = useState('');
+  useEffect(() => {
+    axios.get('/api/user/settings').then((res) => {
+      if (res.data.mfp_username) setMfpUsername(res.data.mfp_username);
+    }).catch(() => {});
+  }, []);
+
   useEffect(() => {
     fetchData();
     const autoSync = async () => {
       try {
         const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-        await Promise.allSettled([
+        const tasks = [
           axios.post(`/api/fit/sync-sleep?days=2&tz=${encodeURIComponent(tz)}`),
           axios.get(`/api/ultrahuman/sync?days=2`),
-        ]);
+        ];
+        // Auto-import MFP for selected date if username saved
+        if (mfpUsername) {
+          tasks.push(
+            axios.post('/api/nutrition/mfp/import', { username: mfpUsername, from: activeDateStr, to: activeDateStr })
+          );
+        }
+        await Promise.allSettled(tasks);
         fetchData();
       } catch (e) {
         console.warn('Dashboard auto-sync failed:', e);
       }
     };
     autoSync();
-  }, [fetchData]);
+  }, [fetchData, mfpUsername, activeDateStr]);
 
   const activeData = useMemo(() => {
     const sleep = allData.sleep.find((s) => s.date === activeDateStr);
@@ -396,6 +416,9 @@ export default function Dashboard({
     const hasPhotos = allData.photoDates.includes(activeDateStr);
     const mentalHealth = allData.mentalHealth.find(
       (m) => m.date === activeDateStr
+    );
+    const nutrition = allData.nutrition.find(
+      (n) => n.date === activeDateStr
     );
 
     const dateObj = new Date(activeDateStr + 'T00:00:00');
@@ -420,6 +443,7 @@ export default function Dashboard({
       hasPhotos,
       scheduledWorkouts,
       mentalHealth,
+      nutrition,
     };
   }, [allData, activeDateStr, plans]);
 
@@ -646,6 +670,7 @@ export default function Dashboard({
         hasWorkout: allData.sessions.some((s) => s.date === dateStr),
         hasPhotos: allData.photoDates.includes(dateStr),
         hasMentalHealth: allData.mentalHealth.some((m) => m.date === dateStr),
+        hasNutrition: allData.nutrition.some((n) => n.date === dateStr),
         activity: allData.activity.find((a) => a.date === dateStr),
       });
     }
@@ -685,10 +710,30 @@ export default function Dashboard({
   };
 
   return (
-    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0 }}>
-      <Grid container spacing={3} sx={{ flex: 1, overflow: 'hidden', alignItems: 'stretch', minHeight: 0 }}>
+    <Box
+      sx={{
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
+        minHeight: 0,
+      }}
+    >
+      <Grid
+        container
+        spacing={3}
+        sx={{
+          flex: 1,
+          overflow: 'hidden',
+          alignItems: 'stretch',
+          minHeight: 0,
+        }}
+      >
         {/* Calendar Section - 1/2 Width */}
-        <Grid size={{ xs: 12, lg: 6 }} sx={{ display: 'flex', overflow: 'hidden' }}>
+        <Grid
+          size={{ xs: 12, lg: 6 }}
+          sx={{ display: 'flex', overflow: 'hidden' }}
+        >
           <Paper
             sx={{
               p: 2,
@@ -841,6 +886,11 @@ export default function Dashboard({
                           sx={{ fontSize: 16, color: 'secondary.main' }}
                         />
                       )}
+                      {d.hasNutrition && (
+                        <RestaurantIcon
+                          sx={{ fontSize: 16, color: '#ff9800' }}
+                        />
+                      )}
                     </Box>
                   </Paper>
                 );
@@ -879,6 +929,10 @@ export default function Dashboard({
                   sx={{ fontSize: 16, color: 'secondary.main' }}
                 />
                 <Typography variant="caption">Mental</Typography>
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <RestaurantIcon sx={{ fontSize: 16, color: '#ff9800' }} />
+                <Typography variant="caption">Food</Typography>
               </Box>
             </Box>
           </Paper>
@@ -1596,6 +1650,67 @@ export default function Dashboard({
                 ) : (
                   <Typography variant="body2" color="text.secondary">
                     No data. Check in daily to track your mental health.
+                  </Typography>
+                )}
+              </CardContent>
+            </Card>
+          </Box>
+
+          {/* Nutrition Card - Full Width */}
+          <Box sx={{ mt: 2 }}>
+            <Card sx={{ ...cardStyle }}>
+              <CardContent>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    mb: 2,
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <RestaurantIcon sx={{ mr: 1, color: '#ff9800' }} />
+                    <Typography variant="h6" fontWeight="bold">
+                      Nutrition
+                    </Typography>
+                    {activeData.nutrition && (
+                      <CheckCircleIcon
+                        color="success"
+                        sx={{ ml: 1, fontSize: 20 }}
+                      />
+                    )}
+                  </Box>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    onClick={() => onNavigate('Nutrition')}
+                  >
+                    Log Meals
+                  </Button>
+                </Box>
+                {activeData.nutrition ? (
+                  <Grid container spacing={1}>
+                    {[
+                      { label: 'Calories', value: Math.round(activeData.nutrition.calories || 0), unit: 'kcal', color: '#ff9800' },
+                      { label: 'Protein', value: Math.round(activeData.nutrition.protein || 0), unit: 'g', color: '#8884d8' },
+                      { label: 'Carbs', value: Math.round(activeData.nutrition.carbohydrates || 0), unit: 'g', color: '#82ca9d' },
+                      { label: 'Fat', value: Math.round(activeData.nutrition.fat || 0), unit: 'g', color: '#ff7300' },
+                      { label: 'Fiber', value: Math.round(activeData.nutrition.fiber || 0), unit: 'g', color: '#ffc658' },
+                      { label: 'Sugar', value: Math.round(activeData.nutrition.sugar || 0), unit: 'g', color: '#e91e63' },
+                    ].map((m) => (
+                      <Grid key={m.label} size={4}>
+                        <Typography variant="caption" color="text.secondary" display="block" noWrap sx={{ fontSize: '0.65rem' }}>
+                          {m.label}
+                        </Typography>
+                        <Typography variant="body2" fontWeight="bold" sx={{ fontSize: '0.8rem', color: m.color }}>
+                          {m.value} {m.unit}
+                        </Typography>
+                      </Grid>
+                    ))}
+                  </Grid>
+                ) : (
+                  <Typography variant="body2" color="text.secondary">
+                    No meals logged for this date.
                   </Typography>
                 )}
               </CardContent>
