@@ -377,9 +377,12 @@ export default function Dashboard({
   // Load saved MFP username
   const [mfpUsername, setMfpUsername] = useState('');
   useEffect(() => {
-    axios.get('/api/user/settings').then((res) => {
-      if (res.data.mfp_username) setMfpUsername(res.data.mfp_username);
-    }).catch(() => {});
+    axios
+      .get('/api/user/settings')
+      .then((res) => {
+        if (res.data.mfp_username) setMfpUsername(res.data.mfp_username);
+      })
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -394,7 +397,11 @@ export default function Dashboard({
         // Auto-import MFP for selected date if username saved
         if (mfpUsername) {
           tasks.push(
-            axios.post('/api/nutrition/mfp/import', { username: mfpUsername, from: activeDateStr, to: activeDateStr })
+            axios.post('/api/nutrition/mfp/import', {
+              username: mfpUsername,
+              from: activeDateStr,
+              to: activeDateStr,
+            })
           );
         }
         await Promise.allSettled(tasks);
@@ -417,9 +424,7 @@ export default function Dashboard({
     const mentalHealth = allData.mentalHealth.find(
       (m) => m.date === activeDateStr
     );
-    const nutrition = allData.nutrition.find(
-      (n) => n.date === activeDateStr
-    );
+    const nutrition = allData.nutrition.find((n) => n.date === activeDateStr);
 
     const dateObj = new Date(activeDateStr + 'T00:00:00');
     const dayName = DAYS_OF_WEEK[dateObj.getDay()];
@@ -662,16 +667,21 @@ export default function Dashboard({
     }
     for (let i = 1; i <= daysInMonth; i++) {
       const dateStr = `${year}-${(month + 1).toString().padStart(2, '0')}-${i.toString().padStart(2, '0')}`;
+      const sleepRec = allData.sleep.find((s) => s.date === dateStr);
+      const actRec = allData.activity.find((a) => a.date === dateStr);
       days.push({
         day: i,
         dateStr,
-        hasSleep: allData.sleep.some((s) => s.date === dateStr),
+        hasSleep: !!sleepRec,
         hasMeasurements: allData.measurements.some((m) => m.date === dateStr),
         hasWorkout: allData.sessions.some((s) => s.date === dateStr),
         hasPhotos: allData.photoDates.includes(dateStr),
         hasMentalHealth: allData.mentalHealth.some((m) => m.date === dateStr),
         hasNutrition: allData.nutrition.some((n) => n.date === dateStr),
-        activity: allData.activity.find((a) => a.date === dateStr),
+        activity: actRec,
+        movementIndex: actRec?.movement_index ?? null,
+        sleepScore: sleepRec?.sleep_score ?? null,
+        recoveryIndex: sleepRec?.recovery_index ?? null,
       });
     }
     return days;
@@ -836,7 +846,7 @@ export default function Dashboard({
                     </Typography>
 
                     {d.activity?.steps > 0 && (
-                      <Box sx={{ lineClamp: 1, overflow: 'hidden', mb: 1 }}>
+                      <Box sx={{ lineClamp: 1, overflow: 'hidden', mb: 0.5 }}>
                         <Typography
                           variant="caption"
                           sx={{
@@ -848,6 +858,99 @@ export default function Dashboard({
                         >
                           {d.activity.steps.toLocaleString()}
                         </Typography>
+                      </Box>
+                    )}
+
+                    {(d.movementIndex != null ||
+                      d.sleepScore != null ||
+                      d.recoveryIndex != null) && (
+                      <Box
+                        sx={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: 0.5,
+                          alignItems: 'stretch',
+                          flex: 1,
+                          width: '100%',
+                          px: 0.3,
+                          py: 0.3,
+                        }}
+                      >
+                        {d.movementIndex != null && (
+                          <Box
+                            sx={{
+                              flex: 1,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              borderRadius: 3,
+                              bgcolor:
+                                d.movementIndex > 80
+                                  ? 'success.main'
+                                  : d.movementIndex > 50
+                                    ? 'warning.main'
+                                    : 'error.main',
+                              color: '#fff',
+                              fontSize: '0.65rem',
+                              fontWeight: 700,
+                              lineHeight: 1,
+                              letterSpacing: '0.02em',
+                              boxShadow: '0 1px 3px rgba(0,0,0,0.15)',
+                            }}
+                          >
+                            M {d.movementIndex}
+                          </Box>
+                        )}
+                        {d.sleepScore != null && (
+                          <Box
+                            sx={{
+                              flex: 1,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              borderRadius: 3,
+                              bgcolor:
+                                d.sleepScore > 80
+                                  ? 'success.main'
+                                  : d.sleepScore > 50
+                                    ? 'warning.main'
+                                    : 'error.main',
+                              color: '#fff',
+                              fontSize: '0.65rem',
+                              fontWeight: 700,
+                              lineHeight: 1,
+                              letterSpacing: '0.02em',
+                              boxShadow: '0 1px 3px rgba(0,0,0,0.15)',
+                            }}
+                          >
+                            S {Math.round(d.sleepScore)}
+                          </Box>
+                        )}
+                        {d.recoveryIndex != null && (
+                          <Box
+                            sx={{
+                              flex: 1,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              borderRadius: 3,
+                              bgcolor:
+                                d.recoveryIndex > 80
+                                  ? 'success.main'
+                                  : d.recoveryIndex > 50
+                                    ? 'warning.main'
+                                    : 'error.main',
+                              color: '#fff',
+                              fontSize: '0.65rem',
+                              fontWeight: 700,
+                              lineHeight: 1,
+                              letterSpacing: '0.02em',
+                              boxShadow: '0 1px 3px rgba(0,0,0,0.15)',
+                            }}
+                          >
+                            R {d.recoveryIndex}
+                          </Box>
+                        )}
                       </Box>
                     )}
 
@@ -958,50 +1061,6 @@ export default function Dashboard({
                 { weekday: 'long', month: 'short', day: 'numeric' }
               )}
             </Typography>
-            <Box sx={{ ml: 'auto', display: 'flex', gap: 1 }}>
-              {activeData.activity?.movement_index != null && (
-                <Chip
-                  label={`Movement: ${activeData.activity.movement_index}`}
-                  size="small"
-                  color={
-                    activeData.activity.movement_index > 80
-                      ? 'success'
-                      : activeData.activity.movement_index > 50
-                        ? 'warning'
-                        : 'error'
-                  }
-                  sx={{ fontWeight: 'bold' }}
-                />
-              )}
-              {activeData.sleep?.recovery_index && (
-                <Chip
-                  label={`Recovery: ${activeData.sleep.recovery_index}`}
-                  size="small"
-                  color={
-                    activeData.sleep.recovery_index > 80
-                      ? 'success'
-                      : activeData.sleep.recovery_index > 50
-                        ? 'warning'
-                        : 'error'
-                  }
-                  sx={{ fontWeight: 'bold' }}
-                />
-              )}
-              {activeData.sleep?.sleep_score && (
-                <Chip
-                  label={`Sleep: ${activeData.sleep.sleep_score}`}
-                  size="small"
-                  color={
-                    activeData.sleep.sleep_score > 80
-                      ? 'success'
-                      : activeData.sleep.sleep_score > 60
-                        ? 'warning'
-                        : 'error'
-                  }
-                  sx={{ fontWeight: 'bold' }}
-                />
-              )}
-            </Box>
           </Box>
 
           <Grid container spacing={2} sx={{ flex: 1, alignItems: 'stretch' }}>
@@ -1691,18 +1750,60 @@ export default function Dashboard({
                 {activeData.nutrition ? (
                   <Grid container spacing={1}>
                     {[
-                      { label: 'Calories', value: Math.round(activeData.nutrition.calories || 0), unit: 'kcal', color: '#ff9800' },
-                      { label: 'Protein', value: Math.round(activeData.nutrition.protein || 0), unit: 'g', color: '#8884d8' },
-                      { label: 'Carbs', value: Math.round(activeData.nutrition.carbohydrates || 0), unit: 'g', color: '#82ca9d' },
-                      { label: 'Fat', value: Math.round(activeData.nutrition.fat || 0), unit: 'g', color: '#ff7300' },
-                      { label: 'Fiber', value: Math.round(activeData.nutrition.fiber || 0), unit: 'g', color: '#ffc658' },
-                      { label: 'Sugar', value: Math.round(activeData.nutrition.sugar || 0), unit: 'g', color: '#e91e63' },
+                      {
+                        label: 'Calories',
+                        value: Math.round(activeData.nutrition.calories || 0),
+                        unit: 'kcal',
+                        color: '#ff9800',
+                      },
+                      {
+                        label: 'Protein',
+                        value: Math.round(activeData.nutrition.protein || 0),
+                        unit: 'g',
+                        color: '#8884d8',
+                      },
+                      {
+                        label: 'Carbs',
+                        value: Math.round(
+                          activeData.nutrition.carbohydrates || 0
+                        ),
+                        unit: 'g',
+                        color: '#82ca9d',
+                      },
+                      {
+                        label: 'Fat',
+                        value: Math.round(activeData.nutrition.fat || 0),
+                        unit: 'g',
+                        color: '#ff7300',
+                      },
+                      {
+                        label: 'Fiber',
+                        value: Math.round(activeData.nutrition.fiber || 0),
+                        unit: 'g',
+                        color: '#ffc658',
+                      },
+                      {
+                        label: 'Sugar',
+                        value: Math.round(activeData.nutrition.sugar || 0),
+                        unit: 'g',
+                        color: '#e91e63',
+                      },
                     ].map((m) => (
                       <Grid key={m.label} size={4}>
-                        <Typography variant="caption" color="text.secondary" display="block" noWrap sx={{ fontSize: '0.65rem' }}>
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          display="block"
+                          noWrap
+                          sx={{ fontSize: '0.65rem' }}
+                        >
                           {m.label}
                         </Typography>
-                        <Typography variant="body2" fontWeight="bold" sx={{ fontSize: '0.8rem', color: m.color }}>
+                        <Typography
+                          variant="body2"
+                          fontWeight="bold"
+                          sx={{ fontSize: '0.8rem', color: m.color }}
+                        >
                           {m.value} {m.unit}
                         </Typography>
                       </Grid>
